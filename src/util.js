@@ -1,6 +1,6 @@
 const Util = {
-    clamp(value) {
-        return Math.max(0, Math.min(1, value));
+    clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
     }
 }
 

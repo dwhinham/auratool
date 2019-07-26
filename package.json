@@ -3,9 +3,19 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@welldone-software/why-did-you-render": "3.2.3",
+    "bootstrap": "4.3.1",
+    "d3": "5.9.7",
+    "evaluatex": "2.1.2",
+    "jquery": "3.4.1",
+    "plotly.js": "1.49.0",
     "react": "^16.8.6",
+    "react-bootstrap": "1.0.0-beta.10",
     "react-dom": "^16.8.6",
-    "react-scripts": "3.0.1"
+    "react-mathjax2": "0.0.2",
+    "react-plotly.js": "2.3.0",
+    "react-scripts": "3.0.1",
+    "typescript": "3.5.3"
   },
   "scripts": {
     "start": "react-scripts start",
