@@ -1,20 +1,33 @@
-import React, { Component } from 'react'
-import Plot from 'react-plotly.js';
-
 import evaluatex from 'evaluatex/dist/evaluatex';
+import Plot from 'react-plotly.js';
+import React, { PureComponent } from 'react'
 
-export default class FunctionPlot extends Component {
-    getRandomColor() {
-        var letters = '0123456789ABCDEF';
-        var color = '#';
-        for (var i = 0; i < 6; i++) {
-            color += letters[Math.floor(Math.random() * 16)];
+export default class FunctionPlot extends PureComponent {
+    constructor(props) {
+        super(props)
+        this.state = {
+            xRange: [0, 1],
+            yRange: [0, 1],
+            dragmode: 'pan'
         }
-        return color;
+    }
+
+    onRelayout = (layout) => {
+        if (layout.hasOwnProperty('dragmode')) {
+            this.setState({
+                dragmode: layout.dragmode
+            })
+        }
+        else if (layout.hasOwnProperty('xaxis.range[0]')) {
+            this.setState({
+                xRange: [layout['xaxis.range[0]'], layout['xaxis.range[1]']],
+                yRange: [layout['yaxis.range[0]'], layout['yaxis.range[1]']]
+            })
+        }
     }
 
     render() {
-        const step = 0.001
+        const step = (this.state.xRange[1] - this.state.xRange[0]) / 1000
 
         let dataSet = []
         this.props.functions.forEach((func) => {
@@ -24,11 +37,12 @@ export default class FunctionPlot extends Component {
                     y: [],
                     type: 'scatter',
                     mode: 'lines',
-                    marker: { color: this.getRandomColor() },
+                    marker: { color: func.color },
+                    name: func.expression
                 }
 
-                const evalFunc = evaluatex(func)
-                for (let x = 0; x <= 1.1; x += step) {
+                const evalFunc = evaluatex(func.expression)
+                for (let x = this.state.xRange[0]; x <= this.state.xRange[1] + step; x += step) {
                     data.x.push(x)
                     data.y.push(evalFunc({ x, e: Math.E, pi: Math.PI }))
                 }
@@ -38,15 +52,38 @@ export default class FunctionPlot extends Component {
             }
         })
 
-        if (this.props.functions) {
-
-        }
-
         return (
             <Plot
                 data={dataSet}
-                layout={{ width: 500, height: 500, margin: { l: 20, r: 0, t: 0, b: 20 } }}
-                config={{ displaylogo: false }}
+                layout={{
+                    width: this.props.width,
+                    height: this.props.height,
+                    margin: { l: 20, r: 20, t: 20, b: 20 },
+                    dragmode: this.state.dragmode,
+                    hovermode: 'closest',
+                    xaxis: { range: this.state.xRange },
+                    yaxis: { range: this.state.yRange },
+                    showlegend: false,
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    modebar: {
+                        bgcolor: 'rgba(0,0,0,0)',
+                        activecolor: 'rgba(150,150,150,255)',
+                        color: 'rgba(0,0,0,255)',
+                    }
+                }}
+                config={{
+                    displaylogo: false,
+                    modeBarButtonsToRemove: [
+                        'toImage',
+                        'autoScale2d',
+                        'toggleSpikelines',
+                        'hoverClosestCartesian',
+                        'hoverCompareCartesian'
+                    ]
+                }}
+                onRelayout={this.onRelayout}
+                onRe
             />
         );
     }
