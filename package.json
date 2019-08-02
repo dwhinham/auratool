@@ -11,6 +11,7 @@
     "d3": "5.9.7",
     "evaluatex": "2.1.2",
     "jquery": "3.4.1",
+    "matter-js": "0.14.2",
     "plotly.js": "1.49.0",
     "react": "^16.8.6",
     "react-bootstrap": "1.0.0-beta.10",

@@ -1,5 +1,8 @@
 import React, { PureComponent } from 'react'
+
 import * as d3 from 'd3';
+import Matter from 'matter-js'
+
 import Util from './util.js';
 
 export default class Server extends PureComponent {
@@ -57,6 +60,95 @@ export default class Server extends PureComponent {
 			.attr("x", 0)
 			.attr("y", 0)
 			.attr("pointer-events", "none")
+
+		// create an engine
+		var engine = Matter.Engine.create({
+			enableSleeping: true
+		});
+
+		// create a renderer
+		var render = Matter.Render.create({
+			element: document.body,
+			engine: engine,
+			options: {
+				width: this.state.width,
+				height: this.state.height,
+				background: 'rgb(0,0,0,0)',
+				wireframes: false,
+			}
+		});
+
+		render.canvas.setAttribute("style", "border: 1px solid black; background-color: rgb(0,0,0,0)")
+
+		// add mouse control
+		var mouse = Matter.Mouse.create(render.canvas)
+		var mouseConstraint = Matter.MouseConstraint.create(engine, {
+            mouse: mouse,
+            constraint: {
+                stiffness: 0.2,
+                render: {
+                    visible: false
+                }
+            }
+		});
+		
+		Matter.World.add(engine.world, mouseConstraint)
+
+		// Top-down
+		engine.world.gravity.x = 0
+		engine.world.gravity.y = 0
+
+		// create objects and ground
+		//var circleA = Matter.Bodies.circle(215, 1, 50, { restitution: 0.5, enableSleeping: true })
+		//var circleB = Matter.Bodies.circle(175, 100, 50)
+
+		// add all of the bodies to the world
+		//Matter.World.add(engine.world)//, [circleA, circleB])//, ground]);
+
+		// engine.world.bodies.forEach(body => {
+		// 	Matter.Events.on(body, 'sleepStart', function(event) {
+		// 		console.log("sleep start")
+		// 	});
+		// 	Matter.Events.on(body, 'sleepEnd', function(event) {
+		// 		console.log("sleep end")
+		// 	});
+		// });
+		
+		// an example of using mouse events on a mouse
+    	Matter.Events.on(mouseConstraint, 'mousedown', function(event) {
+        	var mousePosition = event.mouse.position
+			var bodies = Matter.Query.point(engine.world.bodies, Matter.Vector.create(mousePosition.x, mousePosition.y))
+
+			if (bodies.length)
+				return 
+
+			var body = Matter.Bodies.circle(mousePosition.x, mousePosition.y, 10, { restitution: 0.5 })
+
+			Matter.Events.on(body, 'sleepStart', function(event) {
+				console.log("sleep start")
+			})
+
+			Matter.Events.on(body, 'sleepEnd', function(event) {
+				console.log(event)
+			})
+
+			Matter.World.add(engine.world, body)
+		})
+
+		Matter.Events.on(engine, 'afterUpdate', function(event) {
+			engine.world.bodies.forEach(body => {
+				console.log(body.position)
+			})
+		})
+
+		// run the engine
+		Matter.Engine.run(engine)
+
+		// run the renderer
+		Matter.Render.run(render)
+	}
+
+	componentDidUpdate() {
 	}
 
 	onClick = (event) => {

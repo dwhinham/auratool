@@ -6,12 +6,14 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
 import Button from 'react-bootstrap/Button';
 import ButtonToolbar from 'react-bootstrap/ButtonToolbar'
+import Col from 'react-bootstrap/Col';
 import FormControl from 'react-bootstrap/FormControl'
 import InputGroup from 'react-bootstrap/InputGroup';
-import Col from 'react-bootstrap/Col';
 import Row from 'react-bootstrap/Row';
-import Tabs from 'react-bootstrap/Tabs';
 import Tab from 'react-bootstrap/Tab';
+import Tabs from 'react-bootstrap/Tabs';
+
+import Variables from './variables';
 
 export default function ControlPanel(props) {
 	const popover = {
@@ -30,52 +32,43 @@ export default function ControlPanel(props) {
 	return (
 		<Tabs>
 			<Tab eventKey="functions" title="Functions">
-				<MathJax.Context
-					input='ascii'
-					options={{
-						asciimath2jax: {
-							useMathMLspacing: true,
-							preview: "none",
-						}
-					}}
-				>
-					<div>
-						{props.utilFunctions.map((func, i) => {
-							return (
-								<Row key={i} className="mt-1">
-									<Col>
-										<InputGroup>
-											{ func.expression && 
-											<InputGroup.Prepend>
-												<InputGroup.Text>
-													<MathJax.Node inline>{func.expression}</MathJax.Node>
-												</InputGroup.Text>
-											</InputGroup.Prepend> }
-											<FormControl
-												data-index={i}
-												placeholder="Function (in ASCIImath)"
-												aria-label="Function (in ASCIImath)"
-												onChange={props.onUtilFunctionInputChanged}
-												value={func.expression}
-											/>
-											<InputGroup.Append>
-												<Button data-index={i} onClick={props.onChangeColorClicked} style={{backgroundColor: func.color}}><FontAwesomeIcon icon="palette"/></Button>
-												{
-													props.showColorPicker && parseInt(props.colorIndex) === i &&
-													<div style={ popover }>
-														<div style={ cover } onClick={ props.onChangeColorClicked }/>
-														<SketchPicker disableAlpha={true} color={func.color} onChangeComplete={props.onColorChanged} />
-													</div>
-												}
-												<Button variant="danger" data-index={i} onClick={props.onUtilFunctionDeleted}><FontAwesomeIcon icon="trash"/></Button>
-											</InputGroup.Append>
-										</InputGroup>
-									</Col>
-								</Row>
-							)
-						})}
-					</div>
-				</MathJax.Context>
+				<div>
+					<Variables/>
+					{props.utilFunctions.map((func, i) => {
+						return (
+							<Row key={i} className="mt-1">
+								<Col>
+									<InputGroup>
+										{ func.expression && 
+										<InputGroup.Prepend>
+											<InputGroup.Text>
+												<MathJax.Node inline>{func.expression}</MathJax.Node>
+											</InputGroup.Text>
+										</InputGroup.Prepend> }
+										<FormControl
+											data-index={i}
+											placeholder="Function (in ASCIImath)"
+											aria-label="Function (in ASCIImath)"
+											onChange={props.onUtilFunctionInputChanged}
+											value={func.expression}
+										/>
+										<InputGroup.Append>
+											<Button data-index={i} onClick={props.onChangeColorClicked} style={{backgroundColor: func.color}}><FontAwesomeIcon icon="palette"/></Button>
+											{
+												props.showColorPicker && parseInt(props.colorIndex) === i &&
+												<div style={ popover }>
+													<div style={ cover } onClick={ props.onChangeColorClicked }/>
+													<SketchPicker disableAlpha={true} color={func.color} onChangeComplete={props.onColorChanged} />
+												</div>
+											}
+											<Button variant="danger" data-index={i} onClick={props.onUtilFunctionDeleted}><FontAwesomeIcon icon="trash"/></Button>
+										</InputGroup.Append>
+									</InputGroup>
+								</Col>
+							</Row>
+						)
+					})}
+				</div>
 				<Row className="mt-1">
 					<Col>
 						<Button variant="success" onClick={props.onUtilFunctionAdded}><FontAwesomeIcon icon="plus"/></Button>

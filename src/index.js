@@ -1,6 +1,8 @@
 import React from 'react'
 import ReactDOM from 'react-dom';
 
+import MathJax from 'react-mathjax2';
+
 import 'bootstrap/dist/css/bootstrap.css';
 import './index.css';
 
@@ -17,4 +19,17 @@ if (process.env.NODE_ENV !== 'production') {
 	whyDidYouRender(React);
 }
 
-ReactDOM.render(<UtilSim width="500" height="500" />, document.getElementById('root'));
+ReactDOM.render(
+	<MathJax.Context
+		input='ascii'
+		options={{
+			asciimath2jax: {
+				useMathMLspacing: true,
+				preview: "none",
+			}
+		}}
+	>
+		<UtilSim width="500" height="500" />
+	</MathJax.Context>,
+	document.getElementById('root')
+);
