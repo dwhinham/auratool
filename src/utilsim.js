@@ -28,7 +28,30 @@ const colors = [
 	"#DDDDDD"
 ]
 
-export default class utilsim extends Component {
+const vars = {
+    O_t: {
+        value: 0,
+        type: "count",
+        desc: "Total number of objects on the server.",
+    },
+    O_a: {
+        value: 0,
+        type: "proportion",
+        desc: "Number of active objects.",
+    },
+    O_b: {
+        value: 0,
+        type: "proportion",
+        desc: "Number of objects near a boundary.",
+    },
+    C_l: {
+        value: 0,
+        type: "proportion",
+        desc: "CPU load of the server.",
+    },
+}
+
+export default class UtilSim extends Component {
 	//static whyDidYouRender = true
 	constructor(props) {
 		super(props)
@@ -39,14 +62,15 @@ export default class utilsim extends Component {
 			showColorPicker: false,
 			colorIndex: 0,
 
-			objects: [],
+			vars: vars,
+			objects: {},
 			utilFunctions: [
 				{
 					expression: "x^2",
 					color: colors[0]
 				},
 				{
-					expression: "e^(-10x)",
+					expression: "event^(-10x)",
 					color: colors[1]
 				},
 				{
@@ -57,20 +81,32 @@ export default class utilsim extends Component {
 		}
 	}
 
-	onObjectAdded = (coords) => {
-		let objects = [...this.state.objects.slice(), coords]
+	onObjectAdded = body => {
+		this.setState({
+			objects: {
+				...this.state.objects,
+				[body.id]: { x: body.x, y: body.y }
+			}
+		})
+	}
+
+	onObjectDeleted = id => {
+		const {[id]: key, ...objects} = this.state.objects
 		this.setState({ objects })
 	}
 
-	onObjectDeleted = (e) => {
-		let objects = this.state.objects.slice()
-		objects.splice(e.currentTarget.dataset.index, 1)
-		this.setState({ objects })
+	onAfterUpdate = event => {
+		var objects = {}
+		event.source.world.bodies.forEach(body => {
+			objects[body.id] = { x: body.position.x, y: body.position.y }
+		})
+
+		this.setState({objects})
 	}
 
-	onUtilFunctionInputChanged = (e) => {
+	onUtilFunctionInputChanged = event => {
 		let utilFunctions = this.state.utilFunctions.slice()
-		utilFunctions[e.currentTarget.dataset.index].expression = e.currentTarget.value
+		utilFunctions[event.currentTarget.dataset.index].expression = event.currentTarget.value
 		this.setState({ utilFunctions })
 	}
 
@@ -83,37 +119,25 @@ export default class utilsim extends Component {
 		this.setState({ utilFunctions })
 	}
 
-	onUtilFunctionDeleted = (e) => {
-		if (!e.currentTarget)
+	onUtilFunctionDeleted = event => {
+		if (!event.currentTarget)
 			return
 		let utilFunctions = this.state.utilFunctions.slice()
-		utilFunctions.splice(e.currentTarget.dataset.index, 1)
+		utilFunctions.splice(event.currentTarget.dataset.index, 1)
 		this.setState({ utilFunctions })
 	}
 
-	onChangeColorClicked = (e) => {
+	onChangeColorClicked = event => {
 		this.setState({
 			showColorPicker: !this.state.showColorPicker,
-			colorIndex: e.currentTarget.dataset.index
+			colorIndex: event.currentTarget.dataset.index
 		})
 	}
 
-	onColorChanged = (color) => {
+	onColorChanged = color => {
 		let utilFunctions = this.state.utilFunctions.slice()
 		utilFunctions[this.state.colorIndex].color = color.hex
 		this.setState({ utilFunctions })
-	}
-
-	onRandomPressed = () => {
-		let objects = []
-		for (let i = 0; i < 50; ++i) {
-			objects.push({
-				x: Math.floor(Math.random() * this.props.width),
-				y: Math.floor(Math.random() * this.props.height)
-			})
-		}
-
-		this.setState({ objects })
 	}
 
 	onClearPressed = () => {
@@ -138,6 +162,7 @@ export default class utilsim extends Component {
 								objects={this.state.objects}
 								onObjectAdded={this.onObjectAdded}
 								onObjectDeleted={this.onObjectDeleted}
+								onAfterUpdate={this.onAfterUpdate}
 							/>
 						</Col>
 						<Col>
@@ -155,6 +180,7 @@ export default class utilsim extends Component {
 								onColorChanged={this.onColorChanged}
 								showColorPicker={this.state.showColorPicker}
 								colorIndex={this.state.colorIndex}
+								vars={this.state.vars}
 							/>
 						</Col>
 						<Col>

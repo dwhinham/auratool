@@ -33,7 +33,7 @@ export default function ControlPanel(props) {
 		<Tabs>
 			<Tab eventKey="functions" title="Functions">
 				<div>
-					<Variables/>
+					<Variables vars={props.vars}/>
 					{props.utilFunctions.map((func, i) => {
 						return (
 							<Row key={i} className="mt-1">
@@ -78,8 +78,8 @@ export default function ControlPanel(props) {
 
 			<Tab eventKey="objects" title="Objects">
 				<ul>
-					{props.objects.map((o, i) => {
-						return <li key={i}>{`Object ${i} = x: ${o.x}, y: ${o.y}`}</li>
+					{ Object.keys(props.objects).map((o, i) => {
+						return <li key={i}>{`Object ${i}: id = ${o}, x = ${props.objects[o].x}, y = ${props.objects[o].y}`}</li>
 					})}
 				</ul>
 			</Tab>

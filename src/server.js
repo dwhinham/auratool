@@ -1,225 +1,182 @@
 import React, { PureComponent } from 'react'
 
-import * as d3 from 'd3';
 import Matter from 'matter-js'
-
-import Util from './util.js';
 
 export default class Server extends PureComponent {
 	static whyDidYouRender = true
+
 	constructor(props) {
 		super(props)
 
-		this.svgRef = React.createRef();
+		this.canvasRef = React.createRef()
 		this.state = {
 			width: props.width,
-			height: props.height,
-			onObjectAdded: props.onObjectAdded,
-			onObjectDeleted: props.onObjectDeleted
+			height: props.height
 		}
-	}
 
-	convertCoords = (event) => {
-		let x = Util.clamp(event.nativeEvent.offsetX, 0, this.state.width)
-		let y = Util.clamp(event.nativeEvent.offsetY, 0, this.state.height)
+		// Create a physics engine
+		this.matterEngine = Matter.Engine.create({
+			enableSleeping: true
+		})
 
-		return { x: x, y: y }
-	}
-
-	clearCanvas = () => {
-		this.canvasCtx.clearRect(0, 0, this.state.width, this.state.height)
+		// Top-down, so no gravity
+		this.matterEngine.world.gravity.x = 0
+		this.matterEngine.world.gravity.y = 0
 	}
 
 	componentDidMount = () => {
-		let svg = d3.select(this.svgRef.current)
+		// Get canvas context and set it up
+		this.canvasCtx = this.canvasRef.current.getContext("2d")
+		this.canvasCtx.font = "12px Arial"
 
-		this.horizontalXHair = svg.append("line")
-			.attr("x1", 0)
-			.attr("y1", 0)
-			.attr("x2", this.state.width)
-			.attr("y2", 0)
-			.attr("stroke-width", 0.5)
-			.attr("stroke-dasharray", "5,5")
-			.attr("stroke", "blue")
-			.attr("pointer-events", "none")
-			.attr("display", "none")
-
-		this.verticalXHair = svg.append("line")
-			.attr("x1", 0)
-			.attr("y1", 0)
-			.attr("x2", 0)
-			.attr("y2", this.state.height)
-			.attr("stroke-width", 0.5)
-			.attr("stroke-dasharray", "5,5")
-			.attr("stroke", "blue")
-			.attr("pointer-events", "none")
-			.attr("display", "none")
-
-		this.coordsLabel = svg.append("text")
-			.attr("class", "smallText")
-			.attr("x", 0)
-			.attr("y", 0)
-			.attr("pointer-events", "none")
-
-		// create an engine
-		var engine = Matter.Engine.create({
-			enableSleeping: true
-		});
-
-		// create a renderer
-		var render = Matter.Render.create({
-			element: document.body,
-			engine: engine,
-			options: {
-				width: this.state.width,
-				height: this.state.height,
-				background: 'rgb(0,0,0,0)',
-				wireframes: false,
-			}
-		});
-
-		render.canvas.setAttribute("style", "border: 1px solid black; background-color: rgb(0,0,0,0)")
-
-		// add mouse control
-		var mouse = Matter.Mouse.create(render.canvas)
-		var mouseConstraint = Matter.MouseConstraint.create(engine, {
-            mouse: mouse,
+		// Add mouse control
+		this.matterMouse = Matter.Mouse.create(this.canvasRef.current)
+		this.matterMouseConstraint = Matter.MouseConstraint.create(this.matterEngine, {
+            mouse: this.matterMouse,
             constraint: {
                 stiffness: 0.2,
                 render: {
                     visible: false
                 }
             }
-		});
-		
-		Matter.World.add(engine.world, mouseConstraint)
-
-		// Top-down
-		engine.world.gravity.x = 0
-		engine.world.gravity.y = 0
-
-		// create objects and ground
-		//var circleA = Matter.Bodies.circle(215, 1, 50, { restitution: 0.5, enableSleeping: true })
-		//var circleB = Matter.Bodies.circle(175, 100, 50)
-
-		// add all of the bodies to the world
-		//Matter.World.add(engine.world)//, [circleA, circleB])//, ground]);
-
-		// engine.world.bodies.forEach(body => {
-		// 	Matter.Events.on(body, 'sleepStart', function(event) {
-		// 		console.log("sleep start")
-		// 	});
-		// 	Matter.Events.on(body, 'sleepEnd', function(event) {
-		// 		console.log("sleep end")
-		// 	});
-		// });
-		
-		// an example of using mouse events on a mouse
-    	Matter.Events.on(mouseConstraint, 'mousedown', function(event) {
-        	var mousePosition = event.mouse.position
-			var bodies = Matter.Query.point(engine.world.bodies, Matter.Vector.create(mousePosition.x, mousePosition.y))
-
-			if (bodies.length)
-				return 
-
-			var body = Matter.Bodies.circle(mousePosition.x, mousePosition.y, 10, { restitution: 0.5 })
-
-			Matter.Events.on(body, 'sleepStart', function(event) {
-				console.log("sleep start")
-			})
-
-			Matter.Events.on(body, 'sleepEnd', function(event) {
-				console.log(event)
-			})
-
-			Matter.World.add(engine.world, body)
 		})
 
-		Matter.Events.on(engine, 'afterUpdate', function(event) {
-			engine.world.bodies.forEach(body => {
-				console.log(body.position)
-			})
+		// Create a renderer
+		this.matterRender = Matter.Render.create({
+			canvas: this.canvasRef.current,
+			engine: this.matterEngine,
+			mouse: this.matterMouse,
+			options: {
+				//mouse: this.matterMouse,
+				width: this.state.width,
+				height: this.state.height,
+				background: 'rgb(0, 0, 0, 0)',
+				wireframes: false,
+			}
 		})
+		
+		Matter.World.add(this.matterEngine.world, this.matterMouseConstraint)
+
+
+		// Mouse handlers
+		Matter.Events.on(this.matterMouseConstraint, 'mouseup', this.onMouseUp)
+		Matter.Events.on(this.matterMouseConstraint, 'mousemove', this.onMouseMove)
+
+		// Update positions 
+		Matter.Events.on(this.matterEngine, 'afterUpdate', this.props.onAfterUpdate)
+
+		// Renderer hooks
+		Matter.Events.on(this.matterRender, 'beforeRender', this.onBeforeRender)
+		Matter.Events.on(this.matterRender, 'afterRender', this.onAfterRender)
 
 		// run the engine
-		Matter.Engine.run(engine)
+		Matter.Engine.run(this.matterEngine)
 
 		// run the renderer
-		Matter.Render.run(render)
+		Matter.Render.run(this.matterRender)
 	}
 
-	componentDidUpdate() {
+	onBeforeRender = event => {
+
 	}
 
-	onClick = (event) => {
-		let coords = this.convertCoords(event)
+	onAfterRender = event => {
+		if (!this.state.drawCursor)
+			return
+	
+		var ctx = this.canvasCtx
 
-		if (this.state.onObjectAdded)
-			this.state.onObjectAdded(coords)
+		// Draw crosshairs
+		ctx.lineWidth = 1
+		ctx.setLineDash([5, 8])
+		ctx.beginPath()
+		ctx.moveTo(this.state.mouse.absolute.x + 0.5, 0)
+		ctx.lineTo(this.state.mouse.absolute.x + 0.5, this.state.height)
+		ctx.stroke()
+
+		ctx.beginPath()
+		ctx.moveTo(0, this.state.mouse.absolute.y + 0.5)
+		ctx.lineTo(this.state.width, this.state.mouse.absolute.y + 0.5)
+		ctx.stroke()
+
+		// Draw coordinates
+		ctx.fillStyle = "black"
+		ctx.fillText(`${this.state.mouse.position.x}, ${this.state.mouse.position.y}`, this.state.mouse.absolute.x + 10, this.state.mouse.absolute.y - 10)
 	}
 
-	onMouseMove = (event) => {
-		let { x, y } = this.convertCoords(event)
-
-		this.horizontalXHair.attr("y1", y).attr("y2", y).raise()
-		this.verticalXHair.attr("x1", x).attr("x2", x).raise()
-		this.coordsLabel.attr("x", x + 5).attr("y", y - 5).text(`${x}, ${y}`).raise()
+	onMouseDragStart = event => {
+		this.setState({mouseDragging: true})
 	}
 
-	onMouseOver = () => {
+	onMouseDragEnd = event => {
+		this.setState({mouseDragging: false})
+	}
+
+	onMouseUp = event => {
+		var mousePosition = event.mouse.position
+		var bodies = Matter.Query.point(this.matterEngine.world.bodies, Matter.Vector.create(mousePosition.x, mousePosition.y))
+
+		if (bodies.length) {
+			//this.props.onObjectDeleted(bodies[0].id)
+			//Matter.Composite.remove(this.matterEngine.world, bodies[0])
+			//return
+		}
+
+		var body = Matter.Bodies.circle(mousePosition.x, mousePosition.y, 10, { restitution: 0.5 })
+
+		Matter.Events.on(body, 'sleepStart', event => {
+			//console.log("sleep start")
+		})
+
+		Matter.Events.on(body, 'sleepEnd', event => {
+			//console.log(event)
+		})
+
+		Matter.World.add(this.matterEngine.world, body)
+		this.props.onObjectAdded(body)
+	}
+
+	onMouseMove = event => {
+		this.setState({
+			mouse: { 
+				absolute: event.mouse.absolute,
+				position: event.mouse.position
+			}
+		})
+	}
+
+	onMouseOver = event => {
 		// Show crosshair and coords
-		this.horizontalXHair.attr("display", "inline")
-		this.verticalXHair.attr("display", "inline")
-		this.coordsLabel.attr("display", "inline")
+		this.setState({drawCursor: true})
 	}
 
-	onMouseOut = () => {
+	onMouseOut = event => {
 		// Hide crosshair and coords
-		this.horizontalXHair.attr("display", "none")
-		this.verticalXHair.attr("display", "none")
-		this.coordsLabel.attr("display", "none")
+		this.setState({drawCursor: false})
+	}
+
+	onWheel = event => {
+		const maxX = this.matterRender.bounds.max.x
+		const maxY = this.matterRender.bounds.max.y
+		const step = (event.deltaY < 0 ? -1 : 1) * 0.2 * this.matterRender.bounds.max.x
+
+		Matter.Render.lookAt(this.matterRender, {
+			bounds: {
+				min: { x: 0, y : 0 },
+				max: { x: maxX + step, y: maxY + step }
+			}
+		}, null, true)
 	}
 
 	render() {
 		return (
-			<svg
+			<canvas
 				id="gridCanvas"
-				ref={this.svgRef}
-				width={this.state.width}
-				height={this.state.height}
-				onClick={this.onClick}
-				onMouseMove={this.onMouseMove}
+				ref={this.canvasRef}
 				onMouseOver={this.onMouseOver}
 				onMouseOut={this.onMouseOut}
-				xmlns="http://www.w3.org/2000/svg"
-			>
-				{this.props.objects.map((coords, i) => {
-					return (
-						<circle
-							key={i}
-							cx={coords.x}
-							cy={coords.y}
-							r={10}
-							fill="red"
-							data-index={i}
-							onClick={(e) => {
-								this.props.onObjectDeleted(e)
-								e.stopPropagation()
-							}}
-							onMouseOver={(e) => {
-								d3.select(e.target)
-									.attr("fill", "orange")
-									.attr("r", 12)
-							}}
-							onMouseOut={(e) => {
-								d3.select(e.target)
-									.attr("fill", "red")
-									.attr("r", 10)
-							}}
-						/>
-					)
-				})}
-			</svg>
+				onWheel={this.onWheel}
+			/>
 		)
 	}
 }

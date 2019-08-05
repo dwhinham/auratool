@@ -1,48 +1,32 @@
 import React, { Component } from 'react'
 
-
 import MathJax from 'react-mathjax2';
 
-import Col from 'react-bootstrap/Col';
-import Row from 'react-bootstrap/Row';
-
-const vars = [
-    {
-        name: "O_t",
-        type: "count",
-        desc: "Total number of objects on the server.",
-    },
-    {
-        name: "O_a",
-        type: "proportion",
-        desc: "Number of active objects.",
-    },
-    {
-        name: "O_b",
-        type: "proportion",
-        desc: "Number of objects near a boundary.",
-    },
-    {
-        name: "C_l",
-        type: "proportion",
-        desc: "CPU load of the server.",
-    },
-]
+import Table from 'react-bootstrap/Table';
 
 export default class Variables extends Component {
     render() {
         return (
-            <Row>
-            { vars.map((v, i) => {
-                return (
-                    <Row key={i}>
-                        <Col>
-                            <MathJax.Node inline>{ v.name }</MathJax.Node>
-                        </Col>
-                    </Row>
-                )
-            })}
-            </Row>
+            <Table hover striped size="sm">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Value</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                { Object.keys(this.props.vars).map((v, i) => { return (
+                    <tr key={i}>
+                        <td><MathJax.Node>{v}</MathJax.Node></td>
+                        <td>{this.props.vars[v].value}</td>
+                        <td>{this.props.vars[v].type}</td>
+                        <td>{this.props.vars[v].desc}</td>
+                    </tr>
+                )})}
+                </tbody>
+            </Table>
         )
     }
 }
