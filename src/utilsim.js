@@ -1,5 +1,6 @@
 import React, { Component } from 'react'
 
+import evaluatex from 'evaluatex/dist/evaluatex';
 import FunctionPlot from './functionplot'
 import ControlPanel from './controlpanel'
 import Server from './server'
@@ -8,6 +9,7 @@ import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
 import Navbar from 'react-bootstrap/Navbar';
 import Row from 'react-bootstrap/Row';
+import { vars } from './variables'
 
 const colors = [
 	"#001f3f",
@@ -28,33 +30,12 @@ const colors = [
 	"#DDDDDD"
 ]
 
-const vars = {
-    O_t: {
-        value: 0,
-        type: "count",
-        desc: "Total number of objects on the server.",
-    },
-    O_a: {
-        value: 0,
-        type: "proportion",
-        desc: "Number of active objects.",
-    },
-    O_b: {
-        value: 0,
-        type: "proportion",
-        desc: "Number of objects near a boundary.",
-    },
-    C_l: {
-        value: 0,
-        type: "proportion",
-        desc: "CPU load of the server.",
-    },
-}
-
 export default class UtilSim extends Component {
 	//static whyDidYouRender = true
 	constructor(props) {
 		super(props)
+
+		this.serverRef = React.createRef()
 
 		this.state = {
 			x: 0,
@@ -67,18 +48,30 @@ export default class UtilSim extends Component {
 			utilFunctions: [
 				{
 					expression: "x^2",
+					plotVar: "x",
 					color: colors[0]
 				},
 				{
-					expression: "event^(-10x)",
+					expression: "e^(-10O_a)",
+					plotVar: "O_a",
 					color: colors[1]
 				},
 				{
-					expression: "(2x-1)",
+					expression: "O_a",
+					plotVar: "x",
 					color: colors[2]
 				}
 			]
 		}
+
+		this.state.utilFunctions.forEach(func => {
+			// Try to compile the function
+			try {
+				func.evalFunc = evaluatex(func.expression)
+			} catch {
+				func.evalFunc = null
+			}
+		})
 	}
 
 	onObjectAdded = body => {
@@ -96,17 +89,63 @@ export default class UtilSim extends Component {
 	}
 
 	onAfterUpdate = event => {
-		var objects = {}
+		//var objects = {}
+		var numObjects = event.source.world.bodies.length
+		var numActive = numObjects
+
 		event.source.world.bodies.forEach(body => {
-			objects[body.id] = { x: body.position.x, y: body.position.y }
+			//objects[body.id] = { x: body.position.x, y: body.position.y }
+			if (body.isSleeping)
+				numActive--
 		})
 
-		this.setState({objects})
+		var vars = Object.assign({}, this.state.vars)
+
+		// Update vars
+		vars.O_t.value = numObjects
+		vars.O_a.value = numObjects ? numActive / numObjects : 0
+
+		this.setState({vars})
+
+		// this.setState(prevState => {
+		// 	return {
+		// 		//objects: objects,
+		// 		vars: {
+		// 			...prevState.vars,
+		// 			O_t: {
+		// 				...prevState.vars.O_t,import evaluatex from 'evaluatex/dist/evaluatex';
+		// 				value: numObjects,
+		// 			},
+		// 			O_a: {
+		// 				...prevState.vars.O_a,
+		// 				value: numObjects ? numActive / numObjects : 0,
+		// 			},
+					
+		// 		}
+		// 	}
+		// })
 	}
 
 	onUtilFunctionInputChanged = event => {
+		const index = event.currentTarget.dataset.index
+		const expression = event.currentTarget.value
+
 		let utilFunctions = this.state.utilFunctions.slice()
-		utilFunctions[event.currentTarget.dataset.index].expression = event.currentTarget.value
+		utilFunctions[index].expression = expression
+
+		// Try to compile the function
+		try {
+            utilFunctions[index].evalFunc = evaluatex(expression)
+		} catch {
+			utilFunctions[index].evalFunc = null
+		}
+
+		this.setState({ utilFunctions })
+	}
+
+	onUtilFunctionPlotVarChanged = (index, plotVar) => {
+		let utilFunctions = this.state.utilFunctions.slice()
+		utilFunctions[index].plotVar = plotVar
 		this.setState({ utilFunctions })
 	}
 
@@ -114,6 +153,7 @@ export default class UtilSim extends Component {
 		let utilFunctions = this.state.utilFunctions.slice()
 		utilFunctions.push({
 			expression: "",
+			plotVar: "x",
 			color: colors[utilFunctions.length % colors.length]
 		})
 		this.setState({ utilFunctions })
@@ -140,8 +180,13 @@ export default class UtilSim extends Component {
 		this.setState({ utilFunctions })
 	}
 
+	onRandomPressed = () => {
+		this.serverRef.current.spawnRandomObjects(100)
+	}
+
 	onClearPressed = () => {
-		this.setState({ objects: [] })
+		this.setState({ objects: {} })
+		this.serverRef.current.clearAllObjects()
 	}
 
 	render() {
@@ -157,9 +202,8 @@ export default class UtilSim extends Component {
 					<Row>
 						<Col>
 							<Server
-								width={this.props.width}
-								height={this.props.height}
-								objects={this.state.objects}
+								ref={this.serverRef}
+								//objects={this.state.objects}
 								onObjectAdded={this.onObjectAdded}
 								onObjectDeleted={this.onObjectDeleted}
 								onAfterUpdate={this.onAfterUpdate}
@@ -172,6 +216,7 @@ export default class UtilSim extends Component {
 								objects={this.state.objects}
 								utilFunctions={this.state.utilFunctions}
 								onUtilFunctionInputChanged={this.onUtilFunctionInputChanged}
+								onUtilFunctionPlotVarChanged={this.onUtilFunctionPlotVarChanged}
 								onUtilFunctionAdded={this.onUtilFunctionAdded}
 								onUtilFunctionDeleted={this.onUtilFunctionDeleted}
 								onRandomPressed={this.onRandomPressed}
@@ -184,7 +229,10 @@ export default class UtilSim extends Component {
 							/>
 						</Col>
 						<Col>
-							<FunctionPlot functions={this.state.utilFunctions} />
+							<FunctionPlot
+								functions={this.state.utilFunctions}
+								vars={this.state.vars}
+							/>
 						</Col>
 					</Row>
 				</Container>

@@ -1,19 +1,20 @@
 import React from 'react'
 
-import MathJax from 'react-mathjax2';
-import { SketchPicker } from 'react-color';
+import MathJax from 'react-mathjax2'
+import { SketchPicker } from 'react-color'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
-import Button from 'react-bootstrap/Button';
+import Button from 'react-bootstrap/Button'
 import ButtonToolbar from 'react-bootstrap/ButtonToolbar'
-import Col from 'react-bootstrap/Col';
+import Col from 'react-bootstrap/Col'
+import Dropdown from 'react-bootstrap/Dropdown'
 import FormControl from 'react-bootstrap/FormControl'
-import InputGroup from 'react-bootstrap/InputGroup';
-import Row from 'react-bootstrap/Row';
-import Tab from 'react-bootstrap/Tab';
-import Tabs from 'react-bootstrap/Tabs';
+import InputGroup from 'react-bootstrap/InputGroup'
+import Row from 'react-bootstrap/Row'
+import Tab from 'react-bootstrap/Tab'
+import Tabs from 'react-bootstrap/Tabs'
 
-import Variables from './variables';
+import Variables from './variables'
 
 export default function ControlPanel(props) {
 	const popover = {
@@ -39,12 +40,14 @@ export default function ControlPanel(props) {
 							<Row key={i} className="mt-1">
 								<Col>
 									<InputGroup>
-										{ func.expression && 
-										<InputGroup.Prepend>
-											<InputGroup.Text>
-												<MathJax.Node inline>{func.expression}</MathJax.Node>
-											</InputGroup.Text>
-										</InputGroup.Prepend> }
+										{
+											func.expression && 
+											<InputGroup.Prepend>
+												<InputGroup.Text>
+													<MathJax.Node inline>{func.expression}</MathJax.Node>
+												</InputGroup.Text>
+											</InputGroup.Prepend>
+										}
 										<FormControl
 											data-index={i}
 											placeholder="Function (in ASCIImath)"
@@ -53,6 +56,29 @@ export default function ControlPanel(props) {
 											value={func.expression}
 										/>
 										<InputGroup.Append>
+											<Dropdown>
+												<Dropdown.Toggle variant="dark" style={{borderRadius: 0}}>
+													<MathJax.Node inline>{func.plotVar}</MathJax.Node>
+												</Dropdown.Toggle>
+
+												<Dropdown.Menu>											
+													<Dropdown.Header>Plot variable</Dropdown.Header>
+													<Dropdown.Item onSelect={() => { props.onUtilFunctionPlotVarChanged(i, "x") }}>
+														<MathJax.Node inline>x</MathJax.Node>
+													</Dropdown.Item>
+													<Dropdown.Divider />
+													{
+														Object.keys(props.vars).map((key, j) => {
+															return (
+																<Dropdown.Item key={j} onSelect={() => { props.onUtilFunctionPlotVarChanged(i, key) }}>
+																	<MathJax.Node>{key}</MathJax.Node>
+																</Dropdown.Item>
+															)
+														})
+													}
+												</Dropdown.Menu>	
+											</Dropdown>
+
 											<Button data-index={i} onClick={props.onChangeColorClicked} style={{backgroundColor: func.color}}><FontAwesomeIcon icon="palette"/></Button>
 											{
 												props.showColorPicker && parseInt(props.colorIndex) === i &&
@@ -61,7 +87,10 @@ export default function ControlPanel(props) {
 													<SketchPicker disableAlpha={true} color={func.color} onChangeComplete={props.onColorChanged} />
 												</div>
 											}
-											<Button variant="danger" data-index={i} onClick={props.onUtilFunctionDeleted}><FontAwesomeIcon icon="trash"/></Button>
+
+											<Button variant="danger" data-index={i} onClick={props.onUtilFunctionDeleted}>
+												<FontAwesomeIcon icon="trash"/>
+											</Button>
 										</InputGroup.Append>
 									</InputGroup>
 								</Col>

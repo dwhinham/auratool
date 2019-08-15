@@ -1,8 +1,7 @@
-import evaluatex from 'evaluatex/dist/evaluatex';
 import Plot from 'react-plotly.js';
-import React, { PureComponent } from 'react'
+import React, { Component } from 'react'
 
-export default class FunctionPlot extends PureComponent {
+export default class FunctionPlot extends Component {
     constructor(props) {
         super(props)
         this.state = {
@@ -27,12 +26,19 @@ export default class FunctionPlot extends PureComponent {
     }
 
     render() {
-        const step = (this.state.xRange[1] - this.state.xRange[0]) / 1000
+        const step = (this.state.xRange[1] - this.state.xRange[0]) / 10
 
-        let dataSet = []
-        this.props.functions.forEach((func) => {
+        // Coerce the variables array into the right format for evaluatex
+        var vars = {}
+        Object.keys(this.props.vars).forEach(key => vars[key] = this.props.vars[key].value)
+
+        var dataSet = []
+        this.props.functions.forEach(func => {
+            if (!func.evalFunc)
+                return
+
             try {
-                let data = {
+                var data = {
                     x: [],
                     y: [],
                     type: 'scatter',
@@ -41,13 +47,23 @@ export default class FunctionPlot extends PureComponent {
                     name: func.expression
                 }
 
-                const evalFunc = evaluatex(func.expression)
-                for (let x = this.state.xRange[0]; x <= this.state.xRange[1] + step; x += step) {
+                for (var x = this.state.xRange[0]; x <= this.state.xRange[1] + step; x += step) {
+                    var result = func.evalFunc({
+                        [func.plotVar]: x,
+
+                        // Constants
+                        e: Math.E,
+                        pi: Math.PI,
+
+                        // Variable values
+                        ...vars
+                    })
+
                     data.x.push(x)
-                    data.y.push(evalFunc({ x, e: Math.E, pi: Math.PI }))
+                    data.y.push(result)
                 }
                 dataSet.push(data)
-            } catch {
+            } catch(e) {
                 // Skip this function
             }
         })
