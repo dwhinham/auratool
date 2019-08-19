@@ -1,10 +1,9 @@
-import React, { Component } from 'react'
+import React from 'react'
 
 import MathJax from 'react-mathjax2'
-
 import Table from 'react-bootstrap/Table'
 
-import Util from './util'
+import { round }  from 'lodash'
 
 /*
 cost of sending and receiving an object migration
@@ -55,7 +54,7 @@ export default function Variables(props) {
             { Object.keys(props.vars).map((v, i) => { return (
                 <tr key={i}>
                     <td><MathJax.Node>{v}</MathJax.Node></td>
-                    <td>{Util.round(props.vars[v].value, 2)}</td>
+                    <td>{round(props.vars[v].value, 2)}</td>
                     <td>{props.vars[v].type}</td>
                     <td>{props.vars[v].desc}</td>
                 </tr>

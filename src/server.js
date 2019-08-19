@@ -2,7 +2,7 @@ import React, { PureComponent } from 'react'
 
 import Matter from 'matter-js'
 
-import Util from './util'
+import { round } from 'lodash'
 
 export default class Server extends PureComponent {
 	static whyDidYouRender = true
@@ -124,7 +124,7 @@ export default class Server extends PureComponent {
 
 		// Draw coordinates
 		ctx.fillStyle = "black"
-		ctx.fillText(`${Util.round(this.state.mouse.position.x, 2)}, ${Util.round(this.state.mouse.position.y, 2)}`, this.state.mouse.absolute.x + 10, this.state.mouse.absolute.y - 10)
+		ctx.fillText(`${round(this.state.mouse.position.x, 2)}, ${round(this.state.mouse.position.y, 2)}`, this.state.mouse.absolute.x + 10, this.state.mouse.absolute.y - 10)
 	}
 
 	onMouseDragStart = event => {
