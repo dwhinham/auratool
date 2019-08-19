@@ -128,30 +128,31 @@ export default class Server extends PureComponent {
 	}
 
 	onMouseDragStart = event => {
-		console.log("dragstart")
-		this.setState({dragStartPosition: Object.assign({}, event.mouse.position)})
+		this.setState({ dragStartPosition: Object.assign({}, event.mouse.position) })
 	}
 
 	onMouseDragEnd = event => {
-		console.log("dragstop")
-		var oldPos = this.state.dragStartPosition
-		var newPos = event.mouse.position
-		if (oldPos.x === newPos.x && oldPos.y === newPos.y) {
+		const oldPos = this.state.dragStartPosition
+		const newPos = event.mouse.position
 
-			console.log ('deleting')
-			//this.props.onObjectDeleted(bodies[0].id)
-			//Matter.Composite.remove(this.matterEngine.world, bodies[0])
+		// Clicked on an object without dragging - delete it
+		if (oldPos.x === newPos.x && oldPos.y === newPos.y) {
+			this.props.onObjectDeleted(event.body.id)
+			Matter.Composite.remove(this.matterEngine.world, event.body)
 		}
 	}
 
 	onMouseUp = event => {
-		var mousePosition = event.mouse.position
-		var bodies = Matter.Query.point(this.matterEngine.world.bodies, Matter.Vector.create(mousePosition.x, mousePosition.y))
-
-		if (bodies.length)
+		// Just finished dragging, bail out
+		if (this.state.dragStartPosition) {
+			this.setState({dragStartPosition: null})
 			return
+		}
 
-		var body = Matter.Bodies.circle(mousePosition.x, mousePosition.y, 10, { restitution: 0.5 })
+		const mousePos = event.mouse.position
+			
+		// Add new object
+		const body = Matter.Bodies.circle(mousePos.x, mousePos.y, 10, { restitution: 0.5 })
 
 		Matter.Events.on(body, 'sleepStart', event => {
 			//this.sleepCount--
