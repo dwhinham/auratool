@@ -209,6 +209,12 @@ export default class UtilSim extends Component {
 							/>
 						</Col>
 						<Col>
+							<FunctionPlot
+								functions={this.state.utilFunctions}
+								vars={this.state.vars}
+							/>
+						</Col>
+						<Col>
 							<ControlPanel
 								x={this.state.x}
 								y={this.state.y}
@@ -224,12 +230,6 @@ export default class UtilSim extends Component {
 								onColorChanged={this.onColorChanged}
 								showColorPicker={this.state.showColorPicker}
 								colorIndex={this.state.colorIndex}
-								vars={this.state.vars}
-							/>
-						</Col>
-						<Col>
-							<FunctionPlot
-								functions={this.state.utilFunctions}
 								vars={this.state.vars}
 							/>
 						</Col>
