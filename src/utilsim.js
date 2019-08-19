@@ -57,8 +57,8 @@ export default class UtilSim extends Component {
 					color: colors[1]
 				},
 				{
-					expression: "O_a",
-					plotVar: "x",
+					expression: "O_b",
+					plotVar: "O_b",
 					color: colors[2]
 				}
 			]
@@ -89,8 +89,7 @@ export default class UtilSim extends Component {
 	}
 
 	onAfterUpdate = event => {
-		//var objects = {}
-		var numObjects = event.source.world.bodies.length
+		const numObjects = event.source.world.bodies.length
 		var numActive = numObjects
 
 		event.source.world.bodies.forEach(body => {
@@ -105,7 +104,7 @@ export default class UtilSim extends Component {
 		vars.O_t.value = numObjects
 		vars.O_a.value = numObjects ? numActive / numObjects : 0
 
-		this.setState({vars})
+		this.setState({ vars })
 
 		// this.setState(prevState => {
 		// 	return {
