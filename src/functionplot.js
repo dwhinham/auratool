@@ -1,4 +1,4 @@
-import Plot from 'react-plotly.js';
+import { defaults, Scatter } from 'react-chartjs-2'
 import React, { Component } from 'react'
 
 import memoize from 'memoize-one'
@@ -6,6 +6,11 @@ import memoize from 'memoize-one'
 export default class FunctionPlot extends Component {
     constructor(props) {
         super(props)
+
+        // Setup chart.js defaults
+        defaults.global.animation = false
+        defaults.global.borderWidth = 2
+
         this.state = {
             width: props.width,
             height: props.height,
@@ -31,35 +36,37 @@ export default class FunctionPlot extends Component {
     }
 
     // Memoized function returns cached results when arguments are the same as the last call
-    updateCurves = memoize((funcs, xRange) => {
+    updateCurves = memoize((funcs, vars, xRange) => {
         const numSteps = 100
-        const stepSize = (xRange[1] - xRange[0]) / (numSteps - 1)
+        const stepSize = (xRange[1] - xRange[0]) / numSteps
 
         // Coerce the variables array into the right format for evaluatex
         var evalVars = {}
-        Object.keys(this.props.vars).forEach(key => evalVars[key] = this.props.vars[key].value)
+        Object.keys(vars).forEach(key => evalVars[key] = vars[key].value)
 
         // Plot curves
-        var dataSet = []
+        var datasets = []
         funcs.forEach(func => {
             if (!func.evalFunc)
                 return
 
-            try {
-                var data = {
-                    x: new Array(numSteps),
-                    y: new Array(numSteps),
-                    mode: 'lines',
-                    type: 'scatter',
-                    marker: { color: func.color },
-                    name: func.expression
-                }
+            var dataset = {
+                label: func.expression,
+                fill: false,
+                showLine: true,
+                pointRadius: 0,
+                pointHitRadius: 2,
+                backgroundColor: func.color,
+                borderColor: func.color,
+                data: new Array(numSteps),
+            }
 
-                for (var x = this.state.xRange[0]; x <= this.state.xRange[1] + stepSize; x += stepSize) {
+            try {
+                for (var x = this.state.xRange[0]; x <= this.state.xRange[1]; x += stepSize) {
                     // Don't pass in the emove the 
                     const { [func.plotVar]: _, ...varsWithoutPlotVar } = evalVars
 
-                    const result = func.evalFunc({
+                    const y = func.evalFunc({
                         [func.plotVar]: x,
 
                         // Constants
@@ -70,91 +77,74 @@ export default class FunctionPlot extends Component {
                         ...varsWithoutPlotVar
                     })
 
-                    data.x.push(x)
-                    data.y.push(result)
+                    dataset.data.push({x, y})
                 }
-                dataSet.push(data)
+                datasets.push(dataset)
             } catch(e) {
                 // Skip this function
             }
         })
 
-        return dataSet
+        return datasets
     })
 
     updatePoints = memoize((funcs, vars) => {
-        var dataSet = []
+        var datasets = []
 
         // Coerce the variables array into the right format for evaluatex
         var evalVars = {}
         Object.keys(vars).forEach(key => evalVars[key] = vars[key].value)
 
         funcs.forEach(func => {
-            if (func.plotVar === 'x')
+            if (!func.evalFunc || func.plotVar === 'x')
                 return
 
-            const { [func.plotVar]: plotVar, ...varsWithoutPlotVar } = evalVars
+            try {
+                const { [func.plotVar]: plotVar, ...varsWithoutPlotVar } = evalVars
 
-            const x = evalVars[func.plotVar]
-            const y = func.evalFunc({
-                [func.plotVar]: x,
+                const x = evalVars[func.plotVar]
+                const y = func.evalFunc({
+                    [func.plotVar]: x,
 
-                // Constants
-                e: Math.E,
-                pi: Math.PI,
+                    // Constants
+                    e: Math.E,
+                    pi: Math.PI,
 
-                // Variable values
-                ...varsWithoutPlotVar
-            })
+                    // Variable values
+                    ...varsWithoutPlotVar
+                })
 
-            dataSet.push({
-                x: [x],
-                y: [y],
-                mode: 'markers',
-                type: 'scatter',
-                marker: { color: func.color, size: 18 },
-                name: func.plotVar
-            })
+                datasets.push({
+                    label: func.plotVar,
+                    fill: true,
+                    showLine: false,
+                    pointRadius: 6,
+                    hoverRadius: 8,
+                    pointStyle: 'circle',
+                    pointHitRadius: 2,
+                    backgroundColor: func.color,
+                    borderColor: func.color,
+                    data: [{x, y}]
+                })
+            } catch(e) {
+                // Skip this function
+            }
         })
 
-        return dataSet
+        return datasets
     })
 
     render() {
-        const curves = this.updateCurves(this.props.functions, this.state.xRange)
+        const curves = this.updateCurves(this.props.functions, this.props.vars, this.state.xRange)
         const points = this.updatePoints(this.props.functions, this.props.vars)
+        const data = { datasets: curves.concat(points) }
 
         return (
-            <Plot
-                data={ curves.concat(points) }
-                layout={{
-                    width: this.state.width,
-                    height: this.state.height,
-                    margin: { l: 20, r: 20, t: 20, b: 20 },
-                    dragmode: this.state.dragmode,
-                    hovermode: 'closest',
-                    xaxis: { range: this.state.xRange },
-                    yaxis: { range: this.state.yRange },
-                    showlegend: false,
-                    paper_bgcolor: 'rgba(0,0,0,0)',
-                    plot_bgcolor: 'rgba(0,0,0,0)',
-                    modebar: {
-                        bgcolor: 'rgba(0,0,0,0)',
-                        activecolor: 'rgba(150,150,150,255)',
-                        color: 'rgba(0,0,0,255)',
-                    }
-                }}
-                config={{
-                    displaylogo: false,
-                    modeBarButtonsToRemove: [
-                        'toImage',
-                        'autoScale2d',
-                        'toggleSpikelines',
-                        'hoverClosestCartesian',
-                        'hoverCompareCartesian'
-                    ]
-                }}
-                onRelayout={this.onRelayout}
+            <Scatter
+                data = { data }
+                width={ this.state.width }
+                height={ this.state.height }
+                options={{ maintainAspectRatio: false }}
             />
         );
     }
