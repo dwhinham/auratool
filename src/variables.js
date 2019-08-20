@@ -17,10 +17,10 @@ there's also the cost of number of objects that are completely out of their host
 */
 
 export const vars = {
-    O_t: {
+    CPU_l: {
         value: 0,
-        type: "count",
-        desc: "Total number of objects on the server.",
+        type: "proportion",
+        desc: "CPU load of the server.",
     },
     O_a: {
         value: 0,
@@ -32,11 +32,16 @@ export const vars = {
         type: "proportion",
         desc: "Number of objects near a boundary.",
     },
-    CPU_l: {
+    O_t: {
         value: 0,
-        type: "proportion",
-        desc: "CPU load of the server.",
+        type: "count",
+        desc: "Total number of objects on the server.",
     },
+    T_m: {
+        value: 0,
+        type: "count",
+        desc: "Time since boundaries were last moved (seconds)."
+    }
 }
 
 export default function Variables(props) {

@@ -1,5 +1,6 @@
 import { defaults, Scatter } from 'react-chartjs-2'
 import React, { Component } from 'react'
+import Slider from 'react-input-slider'
 
 import memoize from 'memoize-one'
 
@@ -17,7 +18,8 @@ export default class FunctionPlot extends Component {
             dataSet: [],
             xRange: [0, 1],
             yRange: [0, 1],
-            dragmode: 'pan'
+            dragmode: 'pan',
+            x: 0
         }
     }
 
@@ -133,6 +135,10 @@ export default class FunctionPlot extends Component {
 
         return datasets
     })
+
+    onRangeSliderChanged = value => {
+        this.setState({x: value.x})
+    }
 
     render() {
         const curves = this.updateCurves(this.props.functions, this.props.vars, this.state.xRange)
