@@ -300,51 +300,15 @@ export default class Server extends PureComponent {
 	}
 
 	onWheel = event => {
-		const canvas = event.target
 		const mouse = this.matterMouse
 		const zoomFactor = event.deltaY < 0 ? 0.9 : 1 / 0.9
-
 		const bounds = this.matterRender.bounds
-		const oldWidth = bounds.max.x - bounds.min.x
-		const oldHeight = bounds.max.y - bounds.min.y
-
-		const newWidth = oldWidth * zoomFactor
-		const newHeight = oldHeight * zoomFactor
-
-		const mouseX = mouse.position.x
-		const mouseY = mouse.position.y
-
-		//console.log(`${mouseX}, ${mouseY}`)
-		console.log(mouse.position.x)
 
 		// Reposition viewport
-		bounds.min.x = (mouseX * zoomFactor) - (newWidth / 2) //- (newWidth - oldWidth) * (zoomFactor - 1)
-		bounds.min.y = (mouseY * zoomFactor) - (newHeight / 2) //- (newHeight - oldHeight) * (zoomFactor - 1)
-
-		bounds.max.x = (mouseX * zoomFactor) + (newWidth / 2) //+ (newWidth - oldWidth) * (zoomFactor - 1)
-		bounds.max.y =(mouseY * zoomFactor) + (newHeight / 2) //+ (newHeight - oldHeight) * (zoomFactor - 1)
-
-		// Update mouse offset
-		Matter.Mouse.setOffset(this.matterMouseConstraint.mouse, bounds.min)
-
-		//console.log(event.target)
-		//console.log(`mouse: ${mouseX} x ${mouseY}`)
-
-		// const minX = Math.max(-step / 2, this.matterRender.bounds.min.x + zoom)
-		// const minY = Math.max(-step / 2, this.matterRender.bounds.min.y + zoom)
-		// const maxX = Math.max(step / 2, this.matterRender.bounds.max.x - zoom)
-		// const maxY = Math.max(step / 2, this.matterRender.bounds.max.y - zoom)
-
-		// Clamp to at least 50
-		//maxX = Math.max(step, maxX)
-		//maxY = Math.max(step, maxY)
-
-		// Matter.Render.lookAt(this.matterRender, {
-		// 	bounds: {
-		// 		min: { x: minX, y: minY },
-		// 		max: { x: maxX, y: maxY }
-		// 	}
-		// }, null, true)
+		bounds.min.x = zoomFactor * (bounds.min.x - mouse.position.x) + mouse.position.x
+		bounds.min.y = zoomFactor * (bounds.min.y - mouse.position.y) + mouse.position.y
+		bounds.max.x = zoomFactor * (bounds.max.x - mouse.position.x) + mouse.position.x
+		bounds.max.y = zoomFactor * (bounds.max.y - mouse.position.y) + mouse.position.y
 	}
 
 	spawnRandomObjects = count => {
