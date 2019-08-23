@@ -2,7 +2,12 @@ import React, { PureComponent } from 'react'
 
 import Matter from 'matter-js'
 
-import { clamp, random, round } from 'lodash'
+import { random, round } from 'lodash'
+
+export const MouseMode = {
+	PAN: 'pan',
+	DRAW_BOUNDARY: 'draw_boundary'
+}
 
 export default class Server extends PureComponent {
 	static whyDidYouRender = true
@@ -36,6 +41,13 @@ export default class Server extends PureComponent {
 		this.canvasCtx = canvas.getContext("2d")
 		this.canvasCtx.font = "12px Arial"
 
+		// Fit canvas to container
+		// TODO: make this dynamic
+		canvas.style.width = "100%"
+		canvas.style.height = "100%"
+		canvas.width  = canvas.offsetWidth
+		canvas.height = canvas.offsetHeight
+
 		// Add mouse control
 		this.matterMouse = Matter.Mouse.create(canvas)
 		this.matterMouseConstraint = Matter.MouseConstraint.create(this.matterEngine, {
@@ -50,6 +62,7 @@ export default class Server extends PureComponent {
 
 		// Create a renderer
 		this.matterRender = Matter.Render.create({
+			// Bounds begin centered about the origin
 			bounds: {
 				min: {
 					x: -canvas.width / 2,
@@ -68,17 +81,21 @@ export default class Server extends PureComponent {
 				height: canvas.height,
 				background: 'rgb(0, 0, 0, 0)',
 				wireframes: false,
-				//showDebug: true,
-				showMousePosition: true
 			}
 		})
 		
 		Matter.World.add(this.matterEngine.world, this.matterMouseConstraint)
 
 		// Temp
-		const body = Matter.Bodies.circle(0, 0, 20, { restitution: 0.5 })
-		const body2 = Matter.Bodies.circle(0, 100, 10, { restitution: 0.5 })
-		Matter.World.add(this.matterEngine.world, [body, body2])
+		for (var x = 0; x < 9; ++x) {
+			for (var y = 0; y < 9; ++y) {
+				const body = Matter.Bodies.circle(x * 50 - 200, y * 50 - 200, 20, { restitution: 0.5 })
+				Matter.World.add(this.matterEngine.world, body)		
+			}
+		}
+
+		const body = Matter.Bodies.circle(0, 300, 50, { restitution: 0.5 })
+		Matter.World.add(this.matterEngine.world, body)	
 
 		// Mouse handlers
 		Matter.Events.on(this.matterMouseConstraint, 'mousedown', this.onMouseDown)
@@ -102,104 +119,113 @@ export default class Server extends PureComponent {
 	}
 
 	onAfterRender = event => {
-		const gridSize = 50
+		const gridSize = this.props.gridSize
 		const ctx = event.source.context
 		const canvasWidth = event.source.canvas.width
 		const canvasHeight = event.source.canvas.height
 		const bounds = event.source.bounds
 		const mouse = event.source.mouse
 
-		// Convert between viewport/canvas coords
 		const mod = (x, n) => (x % n + n) % n
-		const boundsWidth = bounds.max.x - bounds.min.x
-		const boundsHeight = bounds.max.y - bounds.min.y
-		const xRatio = (1.0 - mod(bounds.min.x, boundsWidth) / boundsWidth) * canvasWidth
-		const yRatio = (1.0 - mod(bounds.min.y, boundsHeight) / boundsHeight) * canvasHeight
-		const xGridStep = Math.ceil(canvasWidth / boundsWidth * gridSize)
-		const yGridStep = Math.ceil(canvasHeight / boundsHeight) * gridSize
-		const xGridOffset = xRatio % xGridStep
-		const yGridOffset = yRatio % yGridStep
+		const almostEqual = (a, b) => Math.abs(a - b) < 0.00001
+		const roundDrawCoord = x => Math.round(x) + 0.5
 
-		//console.log(`${xRatio}`)
+		// Convert between viewport/canvas coords
+		const boundsWidth = (bounds.max.x - bounds.min.x)
+		const boundsHeight = (bounds.max.y - bounds.min.y)
+		const scale = canvasWidth / boundsWidth
 
-		// Draw origin if it's in view
+		const xOriginOffset = -bounds.min.x
+		const yOriginOffset = -bounds.min.y
+
+		const xGridOffset = mod(xOriginOffset, gridSize)
+		const yGridOffset = mod(yOriginOffset, gridSize)
+
+		const gridStrokeStyle = 'rgb(128, 128, 255, 0.2)'
+		const originStrokeStyle = 'rgb(255, 128, 128, 0.5)'
+
 		ctx.lineWidth = 1
-		ctx.strokeStyle = 'rgb(255, 128, 128, 0.5)'
 		ctx.setLineDash([])
-
-		if (bounds.min.x <= 0 && bounds.max.x > 0)
-		{
-			ctx.beginPath()
-			ctx.moveTo(xRatio, 0)
-			ctx.lineTo(xRatio, canvasHeight)
-			ctx.stroke()
-		}
-
-		if (bounds.min.y <= 0 && bounds.max.y > 0)
-		{
-			ctx.beginPath()
-			ctx.moveTo(0, yRatio)
-			ctx.lineTo(canvasWidth, yRatio)
-			ctx.stroke()
-		}
-
-		// Draw grid
-		ctx.strokeStyle = 'rgb(128, 128, 255, 0.2)'
+		ctx.strokeStyle = gridStrokeStyle
 		ctx.fillStyle = "black"
 
-		var xLabel = Math.floor(bounds.min.x / gridSize) * gridSize
-		var yLabel = Math.floor(bounds.min.y / gridSize) * gridSize
-
-		const xDivisions = boundsWidth / 50;
-		//const hCellsNum = boundingRect.width / cellSize;
-	  
-		for (var i = 0; i <= xDivisions; i++) {
-			var offsetXPos = xGridOffset// Math.ceil(-bounds.min.x / 50) * 50;
-			var xPos = offsetXPos + i * xGridStep;
+		const drawXGridLine = (x, label) => {
+			x = roundDrawCoord(x)
 			ctx.beginPath()
-			ctx.moveTo(xPos, 0)
-			ctx.lineTo(xPos, canvasHeight)
+			ctx.moveTo(x, 0)
+			ctx.lineTo(x, canvasHeight)
 			ctx.stroke()
+
+			ctx.fillText(label, x + 2, canvasHeight - 2)
 		}
 
-		// for (var x = xGridOffset; x < canvasWidth; x += xGridStep) {
-		// 	ctx.beginPath()
-		// 	ctx.moveTo(x + 0.5, 0)
-		// 	ctx.lineTo(x + 0.5, canvasHeight)
-		// 	ctx.stroke()
+		const drawYGridLine = (y, label) => {
+			y = roundDrawCoord(y)
+			ctx.beginPath()
+			ctx.moveTo(0, y)
+			ctx.lineTo(canvasWidth, y)
+			ctx.stroke()
 
-		// 	ctx.fillText(xLabel, x + 2, canvasHeight - 2)
-		// 	xLabel += gridSize
-		// }
+			ctx.fillText(label, 0, y + 2)
+		}
 
-		// for (var y = yGridOffset; y < canvasHeight; y += yGridStep) {
-		// 	ctx.beginPath()
-		// 	ctx.moveTo(0, y + 0.5)
-		// 	ctx.lineTo(canvasWidth, y + 0.5)
-		// 	ctx.stroke()
+		// Axis labels
+		var xLabel = Math.floor(bounds.min.x / gridSize) * gridSize
+		var yLabel = Math.floor(bounds.min.y / gridSize) * gridSize
+		if (xGridOffset !== 0) xLabel += gridSize
+		if (yGridOffset !== 0) yLabel += gridSize
 
-		// 	ctx.fillText(yLabel, 2, y + 2)
-		// 	yLabel += gridSize
-		// }
+		for (var x = xGridOffset; x < boundsWidth; x += gridSize, xLabel += gridSize) {
+			if (almostEqual(x, xOriginOffset)) {
+				// Red origin line
+				ctx.save()
+				ctx.strokeStyle = originStrokeStyle
+				drawXGridLine(x * scale, xLabel)
+				ctx.restore()
+			}
+			else drawXGridLine(x * scale, xLabel)
+		}
+
+		for (var y = yGridOffset; y < boundsHeight; y += gridSize, yLabel += gridSize) {
+			if (almostEqual(y, yOriginOffset)) {
+				// Red origin line
+				ctx.save()
+				ctx.strokeStyle = originStrokeStyle
+				drawYGridLine(y * scale, yLabel)
+				ctx.restore()
+			}
+			else drawYGridLine(y * scale, yLabel)
+		}
 
 		// Draw crosshairs
 		if (!this.state.drawCursor || !mouse)
 			return
 
+		var crosshairX = mouse.position.x
+		var crosshairY = mouse.position.y
+
+		if (this.props.snapToGrid) {
+			crosshairX = Math.round(crosshairX / gridSize) * gridSize
+			crosshairY = Math.round(crosshairY / gridSize) * gridSize
+		}
+
+		const drawX = roundDrawCoord((crosshairX - bounds.min.x) * scale)
+		const drawY = roundDrawCoord((crosshairY - bounds.min.y) * scale)
+
 		ctx.strokeStyle = 'black'
 		ctx.setLineDash([5, 8])
 		ctx.beginPath()
-		ctx.moveTo(mouse.absolute.x + 0.5, 0)
-		ctx.lineTo(mouse.absolute.x + 0.5, canvasHeight)
+		ctx.moveTo(drawX, 0)
+		ctx.lineTo(drawX, canvasHeight)
 		ctx.stroke()
 
 		ctx.beginPath()
-		ctx.moveTo(0, mouse.absolute.y + 0.5)
-		ctx.lineTo(canvasWidth, mouse.absolute.y + 0.5)
+		ctx.moveTo(0, drawY)
+		ctx.lineTo(canvasWidth, drawY)
 		ctx.stroke()
 
 		// Draw coordinates
-		ctx.fillText(`${round(mouse.position.x, 2)}, ${round(mouse.position.y, 2)}`, mouse.absolute.x + 10, mouse.absolute.y - 10)
+		ctx.fillText(`${round(crosshairX, 2)}, ${round(crosshairY, 2)}`, drawX + 10, drawY - 10)
 	}
 
 	onBodyDragStart = event => {
@@ -221,7 +247,6 @@ export default class Server extends PureComponent {
 	}
 
 	onMouseDown = event => {
-		console.log('mousedown')
 		this.setState({mouseDown: true, mouseDownPosition: Object.assign({}, event.mouse.position)})
 	}
 
@@ -239,6 +264,12 @@ export default class Server extends PureComponent {
 		}
 
 		const mousePos = event.mouse.position
+
+		if (this.props.snapToGrid) {
+			const gridSize = this.props.gridSize
+			mousePos.x = Math.round(mousePos.x / gridSize) * gridSize
+			mousePos.y = Math.round(mousePos.y / gridSize) * gridSize
+		}
 			
 		// Add new object
 		const body = Matter.Bodies.circle(mousePos.x, mousePos.y, 10, { restitution: 0.5 })
@@ -258,35 +289,49 @@ export default class Server extends PureComponent {
 	}
 
 	onMouseMove = event => {
-		if (!this.state.dragStartPosition && this.state.mouseDown)
-			this.setState({
-				dragStartPosition: this.state.mouseDownPosition,
-				dragLastPosition: this.state.mouseDownPosition
-			})
-			
-		// Dragging canvas
-		if (!this.state.draggingBody && this.state.dragStartPosition && this.state.mouseDown) {
-			const deltaX = event.mouse.position.x - this.state.dragLastPosition.x
-			const deltaY = event.mouse.position.y - this.state.dragLastPosition.y
-
-			// Reposition viewport
-			this.matterRender.bounds.min.x -= deltaX
-			this.matterRender.bounds.min.y -= deltaY
-			this.matterRender.bounds.max.x -= deltaX
-			this.matterRender.bounds.max.y -= deltaY
-
-			// Update mouse offset
-			Matter.Mouse.setOffset(this.matterMouseConstraint.mouse, this.matterRender.bounds.min)
-
-			this.setState({dragLastPosition: Object.assign({}, event.mouse.position)})
-		}
-
 		this.setState({
 			mouse: { 
 				absolute: event.mouse.absolute,
 				position: event.mouse.position
 			}
 		})
+
+		if (!this.state.mouseDown || this.state.draggingBody)
+			return
+
+
+		if (!this.state.dragStartPosition) {
+			this.setState({
+				dragStartPosition: this.state.mouseDownPosition,
+				dragLastPosition: this.state.mouseDownPosition
+			})
+		}
+
+		// Drag actions
+		switch (this.props.mouseMode) {
+			case MouseMode.PAN: {
+				// Dragging canvas
+				const deltaX = event.mouse.position.x - this.state.dragLastPosition.x
+				const deltaY = event.mouse.position.y - this.state.dragLastPosition.y
+
+				// Reposition viewport
+				this.matterRender.bounds.min.x -= deltaX
+				this.matterRender.bounds.min.y -= deltaY
+				this.matterRender.bounds.max.x -= deltaX
+				this.matterRender.bounds.max.y -= deltaY
+
+				// Update mouse offset
+				Matter.Mouse.setOffset(this.matterMouseConstraint.mouse, this.matterRender.bounds.min)
+
+				this.setState({dragLastPosition: Object.assign({}, event.mouse.position)})
+				break
+			}
+
+			default: break
+		}
+			
+
+
 	}
 
 	onMouseOver = event => {
@@ -333,10 +378,8 @@ export default class Server extends PureComponent {
 	render() {
 		return (
 			// Don't apply any borders/scaling etc to the canvas directly or mouse coords will be off
-			<div id={"gridCanvas"}>
+			<div id={"canvasContainer"}>
 				<canvas
-					width={500}
-					height={500}
 					ref={this.canvasRef}
 					onMouseOver={this.onMouseOver}
 					onMouseOut={this.onMouseOut}

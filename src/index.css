@@ -16,7 +16,9 @@ ol, ul {
   display: flex;
 }
 
-#gridCanvas {
+#canvasContainer {
+  width: 100%;
+  height: 1000px;
   border: 1px solid black;
   cursor: crosshair;
 }

@@ -3,13 +3,17 @@ import React, { Component } from 'react'
 import evaluatex from 'evaluatex/dist/evaluatex';
 import FunctionPlot from './functionplot'
 import ControlPanel from './controlpanel'
-import Server from './server'
+import Server, { MouseMode } from './server'
 
+import Button from 'react-bootstrap/Button'
+import ButtonToolbar from 'react-bootstrap/ButtonToolbar'
+import ButtonGroup from 'react-bootstrap/ButtonGroup'
 import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
 import Navbar from 'react-bootstrap/Navbar';
 import Row from 'react-bootstrap/Row';
 import { vars } from './variables'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 const colors = [
 	"#001f3f",
@@ -43,8 +47,12 @@ export default class UtilSim extends Component {
 			showColorPicker: false,
 			colorIndex: 0,
 
-			vars: vars,
+			mouseMode: MouseMode.PAN,
+			gridSize: 50,
+			snapToGrid: false,
+
 			objects: {},
+			vars: vars,
 			utilFunctions: [
 				{
 					expression: "x^2",
@@ -188,6 +196,10 @@ export default class UtilSim extends Component {
 		this.serverRef.current.clearAllObjects()
 	}
 
+	onHomeClicked = () => {
+		console.log("home")
+	}
+
 	render() {
 		return (
 			<div>
@@ -200,13 +212,46 @@ export default class UtilSim extends Component {
 				<Container fluid="true" className="mt-2">
 					<Row>
 						<Col>
-							<Server
-								ref={this.serverRef}
-								//objects={this.state.objects}
-								onObjectAdded={this.onObjectAdded}
-								onObjectDeleted={this.onObjectDeleted}
-								onAfterUpdate={this.onAfterUpdate}
-							/>
+							<Row>
+								<Col>
+									<ButtonToolbar className="mb-2">
+										<ButtonGroup className="mr-2">
+											<Button size="sm" onClick={this.onHomeClicked}><FontAwesomeIcon icon="home"></FontAwesomeIcon></Button>
+										</ButtonGroup>
+										<ButtonGroup className="mr-2">
+											<Button size="sm" active={this.state.mouseMode === MouseMode.PAN} onClick={() => { this.setState({mouseMode: MouseMode.PAN })}}>
+												<FontAwesomeIcon icon="arrows-alt"></FontAwesomeIcon>
+											</Button>
+											<Button size="sm" active={this.state.mouseMode === MouseMode.DRAW_BOUNDARY} onClick={() => { this.setState({mouseMode: MouseMode.DRAW_BOUNDARY })}}>
+												<FontAwesomeIcon icon="border-all"></FontAwesomeIcon>
+											</Button>
+										</ButtonGroup>
+										<ButtonGroup>
+											<Button size="sm" active={this.state.snapToGrid} onClick={() => { this.setState({snapToGrid: !this.state.snapToGrid })}}>
+												<FontAwesomeIcon icon="magnet"></FontAwesomeIcon>
+											</Button>
+										</ButtonGroup>
+									</ButtonToolbar>
+								</Col>
+							</Row>
+							<Row>
+								<Col>
+									<Server
+										ref={this.serverRef}
+										//objects={this.state.objects}
+
+										// State
+										gridSize={this.state.gridSize}
+										mouseMode={this.state.mouseMode}
+										snapToGrid={this.state.snapToGrid}
+
+										// Callbacks
+										onObjectAdded={this.onObjectAdded}
+										onObjectDeleted={this.onObjectDeleted}
+										onAfterUpdate={this.onAfterUpdate}
+									/>
+								</Col>
+							</Row>
 						</Col>
 						<Col>
 							<FunctionPlot
@@ -216,10 +261,12 @@ export default class UtilSim extends Component {
 						</Col>
 						<Col>
 							<ControlPanel
-								x={this.state.x}
-								y={this.state.y}
+								// Physics state
 								objects={this.state.objects}
+								vars={this.state.vars}
 								utilFunctions={this.state.utilFunctions}
+
+								// Control panel callbacks
 								onUtilFunctionInputChanged={this.onUtilFunctionInputChanged}
 								onUtilFunctionPlotVarChanged={this.onUtilFunctionPlotVarChanged}
 								onUtilFunctionAdded={this.onUtilFunctionAdded}
@@ -230,7 +277,7 @@ export default class UtilSim extends Component {
 								onColorChanged={this.onColorChanged}
 								showColorPicker={this.state.showColorPicker}
 								colorIndex={this.state.colorIndex}
-								vars={this.state.vars}
+
 							/>
 						</Col>
 					</Row>

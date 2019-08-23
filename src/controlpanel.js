@@ -20,7 +20,8 @@ export default function ControlPanel(props) {
 	const popover = {
 		position: 'absolute',
 		top: '2.5rem',
-		zIndex: '200',
+		right: 0,
+		zIndex: 200,
 	}
 	const cover = {
 		position: 'fixed',
@@ -84,7 +85,7 @@ export default function ControlPanel(props) {
 												props.showColorPicker && parseInt(props.colorIndex) === i &&
 												<div style={ popover }>
 													<div style={ cover } onClick={ props.onChangeColorClicked }/>
-													<SketchPicker disableAlpha={true} color={func.color} onChangeComplete={props.onColorChanged} />
+													<SketchPicker disableAlpha={true} color={func.color} onChange={props.onColorChanged} />
 												</div>
 											}
 

@@ -49,7 +49,7 @@ export default function Variables(props) {
         <Table hover striped size="sm">
             <thead>
                 <tr>
-                    <th>Name</th>
+                    <th>Variable</th>
                     <th>Value</th>
                     <th>Type</th>
                     <th>Description</th>
