@@ -225,6 +225,9 @@ export default class UtilSim extends Component {
 											<Button size="sm" active={this.state.mouseMode === MouseMode.DRAW_BOUNDARY} onClick={() => { this.setState({mouseMode: MouseMode.DRAW_BOUNDARY })}}>
 												<FontAwesomeIcon icon="border-all"></FontAwesomeIcon>
 											</Button>
+											<Button size="sm" active={this.state.mouseMode === MouseMode.SNOOKER} onClick={() => { this.setState({mouseMode: MouseMode.SNOOKER })}}>
+												<FontAwesomeIcon icon="bowling-ball"></FontAwesomeIcon>
+											</Button>
 										</ButtonGroup>
 										<ButtonGroup>
 										<Button size="sm" active={this.state.snapToGrid} onClick={() => { this.setState({snapToGrid: !this.state.snapToGrid })}}>
@@ -283,7 +286,6 @@ export default class UtilSim extends Component {
 								onColorChanged={this.onColorChanged}
 								showColorPicker={this.state.showColorPicker}
 								colorIndex={this.state.colorIndex}
-
 							/>
 						</Col>
 					</Row>

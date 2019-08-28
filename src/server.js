@@ -7,7 +7,8 @@ const RenderAuraProj = require('./renderauraproj')
 
 export const MouseMode = {
 	PAN: 'pan',
-	DRAW_BOUNDARY: 'draw_boundary'
+	DRAW_BOUNDARY: 'draw_boundary',
+	SNOOKER: 'snooker',
 }
 
 export default class Server extends PureComponent {
@@ -23,7 +24,9 @@ export default class Server extends PureComponent {
 			showCrosshair: false,
 			draggingBody: false,
 			dragStartPosition: null,
-			dragLastPosition: null
+			dragLastPosition: null,
+
+			snookerBody: null,
 		}
 
 		// Create a physics engine
@@ -105,12 +108,13 @@ export default class Server extends PureComponent {
 		Matter.Events.on(this.matterMouseConstraint, 'startdrag', this.onBodyDragStart)
 		Matter.Events.on(this.matterMouseConstraint, 'enddrag', this.onBodyDragEnd)
 
-		// Update positions 
+		// Engine hooks
+		Matter.Events.on(this.matterEngine, 'beforeUpdate', this.onBeforeUpdate)
 		Matter.Events.on(this.matterEngine, 'afterUpdate', this.props.onAfterUpdate)
 
 		// Renderer hooks
 		Matter.Events.on(this.matterRender, 'beforeRender', this.onBeforeRender)
-		//Matter.Events.on(this.matterRender, 'afterRender', this.onAfterRender)
+		Matter.Events.on(this.matterRender, 'afterRender', this.onAfterRender)
 
 		// Run the engine
 		Matter.Engine.run(this.matterEngine)
@@ -119,11 +123,37 @@ export default class Server extends PureComponent {
 		RenderAuraProj.run(this.matterRender)
 	}
 
+	onBeforeUpdate = event => {
+		// Should we disable the mouse constraint (grab objects?)
+		if (this.props.mouseMode !== MouseMode.PAN)
+			this.matterMouseConstraint.collisionFilter.mask = 0
+		else
+			this.matterMouseConstraint.collisionFilter.mask = 0xFFFFFFFF
+	}
+
 	onBeforeRender = event => {
+		// Update some rendering options
 		const render = event.source
 		render.options.gridSize = this.props.gridSize
 		render.options.showCrosshair = this.state.showCrosshair
 		render.options.crosshairSnap = this.props.snapToGrid
+	}
+
+	onAfterRender = event => {
+		// Draw snooker "cue"
+		if (this.props.mouseMode === MouseMode.SNOOKER && this.state.snookerBody) {
+			const context = event.source.context
+
+			const bodyPos = this.worldToCanvas(this.state.snookerBody.position)
+			const mousePos = this.getMousePos(true)
+
+			context.setLineDash([])
+			context.strokeStyle = 'red'
+			context.beginPath()
+			context.moveTo(bodyPos.x, bodyPos.y)
+			context.lineTo(mousePos.x, mousePos.y)
+			context.stroke()
+		}
 	}
 
 	onBodyDragStart = event => {
@@ -145,45 +175,73 @@ export default class Server extends PureComponent {
 	}
 
 	onMouseDown = event => {
-		this.setState({mouseDown: true, mouseDownPosition: Object.assign({}, event.mouse.position)})
+		this.setState({
+			mouseDown: true,
+			mouseDownPosition:Object.assign({}, event.mouse.position)
+		})
+
+		switch (this.props.mouseMode) {
+			case MouseMode.SNOOKER: {
+				// Did we click on an object?
+				const allBodies = Matter.Composite.allBodies(this.matterEngine.world)
+				const bodies = Matter.Query.point(allBodies, event.mouse.position)
+				this.setState({snookerBody: bodies[0]})
+				break;
+			}
+			
+			default: break
+		}
 	}
 
 	onMouseUp = event => {
 		this.setState({mouseDown: false, mouseDownPosition: null})
 
-		// Just finished dragging, bail out
-		if (this.state.dragStartPosition) {
-			this.setState({
-				draggingBody: false,
-				dragStartPosition: null,
-				dragLastPosition: null
-			})
-			return
+		const mousePos = this.getMousePos()
+		
+		switch (this.props.mouseMode) {
+			case MouseMode.PAN: {
+				// Just finished dragging, bail out
+				if (this.state.dragStartPosition) {
+					this.setState({
+						draggingBody: false,
+						dragStartPosition: null,
+						dragLastPosition: null
+					})
+					break
+				}
+
+				// Add new object
+				const body = Matter.Bodies.circle(mousePos.x, mousePos.y, 10, { restitution: 0.5 })
+
+				// Matter.Events.on(body, 'sleepStart', event => {
+				// 	//this.sleepCount--
+				// 	//console.log(this.sleepCount)
+				// })
+
+				// Matter.Events.on(body, 'sleepEnd', event => {
+				// 	//this.sleepCount++
+				// 	//console.log(this.sleepCount)
+				// })
+
+				Matter.World.add(this.matterEngine.world, body)
+				this.props.onObjectAdded(body)
+				break
+			}
+
+			case MouseMode.SNOOKER: {
+				if (!this.state.snookerBody)
+					break;
+
+				const body = this.state.snookerBody
+				const force = Matter.Vector.mult(Matter.Vector.sub(body.position, mousePos), 0.001 * body.mass)
+
+				Matter.Body.applyForce(body, body.position, force)
+				this.setState({ snookerBody: null })
+				break
+			}
+
+			default: break
 		}
-
-		const mousePos = event.mouse.position
-
-		if (this.props.snapToGrid) {
-			const gridSize = this.props.gridSize
-			mousePos.x = Math.round(mousePos.x / gridSize) * gridSize
-			mousePos.y = Math.round(mousePos.y / gridSize) * gridSize
-		}
-			
-		// Add new object
-		const body = Matter.Bodies.circle(mousePos.x, mousePos.y, 10, { restitution: 0.5 })
-
-		// Matter.Events.on(body, 'sleepStart', event => {
-		// 	//this.sleepCount--
-		// 	//console.log(this.sleepCount)
-		// })
-
-		// Matter.Events.on(body, 'sleepEnd', event => {
-		// 	//this.sleepCount++
-		// 	//console.log(this.sleepCount)
-		// })
-
-		Matter.World.add(this.matterEngine.world, body)
-		this.props.onObjectAdded(body)
 	}
 
 	onMouseMove = event => {
@@ -271,6 +329,29 @@ export default class Server extends PureComponent {
 
 		// Re-add mouse constraint
 		Matter.World.add(this.matterEngine.world, this.matterMouseConstraint)
+	}
+
+	// Convert a position in world space to canvas space
+	worldToCanvas = position => {
+		const render = this.matterRender
+		const scale = render.canvas.width / (render.bounds.max.x - render.bounds.min.x)
+		return Matter.Vector.mult(Matter.Vector.sub(position, render.bounds.min), scale)
+	}
+
+	// Get position of mouse in canvas or world space (snapped to grid if necessary)
+	getMousePos = (canvas = false) => {
+		const gridSize = this.props.gridSize
+		const mousePos = {
+			x: this.matterMouse.position.x,
+			y: this.matterMouse.position.y
+		}
+
+		if (this.props.snapToGrid) {
+			mousePos.x = Math.round(mousePos.x / gridSize) * gridSize
+			mousePos.y = Math.round(mousePos.y / gridSize) * gridSize
+		}
+
+		return canvas ? this.worldToCanvas(mousePos) : mousePos
 	}
 
 	render() {
