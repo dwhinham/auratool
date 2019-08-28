@@ -140,19 +140,49 @@ export default class Server extends PureComponent {
 	}
 
 	onAfterRender = event => {
-		// Draw snooker "cue"
-		if (this.props.mouseMode === MouseMode.SNOOKER && this.state.snookerBody) {
-			const context = event.source.context
+		const context = event.source.context
+		const mousePos = this.getMousePos(true)
 
-			const bodyPos = this.worldToCanvas(this.state.snookerBody.position)
-			const mousePos = this.getMousePos(true)
+		switch (this.props.mouseMode) {
+			case MouseMode.DRAW_BOUNDARY: {
+				if (!this.state.dragStartPosition)
+					break
 
-			context.setLineDash([])
-			context.strokeStyle = 'red'
-			context.beginPath()
-			context.moveTo(bodyPos.x, bodyPos.y)
-			context.lineTo(mousePos.x, mousePos.y)
-			context.stroke()
+				// Draw boundary
+				const topLeft = this.worldToCanvas(this.state.dragStartPosition)
+				const width = mousePos.x - topLeft.x
+				const height = mousePos.y - topLeft.y
+
+				context.setLineDash([])
+				context.lineWidth = 2
+				context.strokeStyle = 'blue'
+				context.fillStyle = 'rgb(128, 128, 255, 0.2)'
+				context.beginPath()
+				context.fillRect(topLeft.x, topLeft.y, width, height)
+				context.rect(topLeft.x, topLeft.y, width, height)
+				context.stroke()
+
+				break
+			}
+
+			case MouseMode.SNOOKER: {
+				if (!this.state.snookerBody)
+					break
+
+				// Draw snooker "cue"
+				const bodyPos = this.worldToCanvas(this.state.snookerBody.position)
+
+				context.setLineDash([])
+				context.strokeStyle = 'red'
+				context.beginPath()
+				context.moveTo(bodyPos.x, bodyPos.y)
+				context.lineTo(mousePos.x, mousePos.y)
+				context.stroke()
+				
+				break
+			}
+
+			default: break
 		}
 	}
 
@@ -175,20 +205,27 @@ export default class Server extends PureComponent {
 	}
 
 	onMouseDown = event => {
+		const mousePos = this.getMousePos()
+
 		this.setState({
 			mouseDown: true,
-			mouseDownPosition:Object.assign({}, event.mouse.position)
+			mouseDownPosition: mousePos
 		})
 
 		switch (this.props.mouseMode) {
 			case MouseMode.SNOOKER: {
 				// Did we click on an object?
 				const allBodies = Matter.Composite.allBodies(this.matterEngine.world)
-				const bodies = Matter.Query.point(allBodies, event.mouse.position)
+				const bodies = Matter.Query.point(allBodies, mousePos)
 				this.setState({snookerBody: bodies[0]})
-				break;
+				break
 			}
-			
+
+			case MouseMode.DRAW_BOUNDARY: {
+				this.setState({dragStartPosition: mousePos})
+				break
+			}
+
 			default: break
 		}
 	}
@@ -240,6 +277,22 @@ export default class Server extends PureComponent {
 				break
 			}
 
+			case MouseMode.DRAW_BOUNDARY: {
+				const bounds = {
+					min: this.state.dragStartPosition,
+					max: mousePos
+				}
+				
+				console.log(`new boundary: {${bounds.min.x}, ${bounds.min.y}} -> {${bounds.max.x}, ${bounds.max.y}}`)
+
+				if (this.props.onBoundaryCreated)
+					this.props.onBoundaryCreated(bounds)
+
+				this.setState({dragStartPosition: null})
+
+				break
+			}
+
 			default: break
 		}
 	}
@@ -285,9 +338,6 @@ export default class Server extends PureComponent {
 
 			default: break
 		}
-			
-
-
 	}
 
 	onMouseOver = event => {
