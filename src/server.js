@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react'
 import Matter from 'matter-js'
-import { random, round } from 'lodash'
+import { random } from 'lodash'
 
 // Custom renderer
 const RenderAuraProj = require('./renderauraproj')
@@ -20,7 +20,7 @@ export default class Server extends PureComponent {
 		this.canvasRef = React.createRef()
 
 		this.state = {
-			drawCursor: false,
+			showCrosshair: false,
 			draggingBody: false,
 			dragStartPosition: null,
 			dragLastPosition: null
@@ -109,8 +109,8 @@ export default class Server extends PureComponent {
 		Matter.Events.on(this.matterEngine, 'afterUpdate', this.props.onAfterUpdate)
 
 		// Renderer hooks
-		//Matter.Events.on(this.matterRender, 'beforeRender', this.onBeforeRender)
-		Matter.Events.on(this.matterRender, 'afterRender', this.onAfterRender)
+		Matter.Events.on(this.matterRender, 'beforeRender', this.onBeforeRender)
+		//Matter.Events.on(this.matterRender, 'afterRender', this.onAfterRender)
 
 		// Run the engine
 		Matter.Engine.run(this.matterEngine)
@@ -119,114 +119,11 @@ export default class Server extends PureComponent {
 		RenderAuraProj.run(this.matterRender)
 	}
 
-	onAfterRender = event => {
-		const gridSize = this.props.gridSize
-		const ctx = event.source.context
-		const canvasWidth = event.source.canvas.width
-		const canvasHeight = event.source.canvas.height
-		const bounds = event.source.bounds
-		const mouse = event.source.mouse
-
-		const mod = (x, n) => (x % n + n) % n
-		const almostEqual = (a, b) => Math.abs(a - b) < 0.00001
-		const roundDrawCoord = x => Math.round(x) + 0.5
-
-		// Convert between viewport/canvas coords
-		const boundsWidth = (bounds.max.x - bounds.min.x)
-		const boundsHeight = (bounds.max.y - bounds.min.y)
-		const scale = canvasWidth / boundsWidth
-
-		const xOriginOffset = -bounds.min.x
-		const yOriginOffset = -bounds.min.y
-
-		const xGridOffset = mod(xOriginOffset, gridSize)
-		const yGridOffset = mod(yOriginOffset, gridSize)
-
-		const gridStrokeStyle = 'rgb(128, 128, 255, 0.2)'
-		const originStrokeStyle = 'rgb(255, 128, 128, 0.5)'
-
-		ctx.lineWidth = 1
-		ctx.setLineDash([])
-		ctx.strokeStyle = gridStrokeStyle
-		ctx.fillStyle = "black"
-
-		const drawXGridLine = (x, label) => {
-			x = roundDrawCoord(x)
-			ctx.beginPath()
-			ctx.moveTo(x, 0)
-			ctx.lineTo(x, canvasHeight)
-			ctx.stroke()
-
-			ctx.fillText(label, x + 2, canvasHeight - 2)
-		}
-
-		const drawYGridLine = (y, label) => {
-			y = roundDrawCoord(y)
-			ctx.beginPath()
-			ctx.moveTo(0, y)
-			ctx.lineTo(canvasWidth, y)
-			ctx.stroke()
-
-			ctx.fillText(label, 0, y + 2)
-		}
-
-		// Axis labels
-		var xLabel = Math.floor(bounds.min.x / gridSize) * gridSize
-		var yLabel = Math.floor(bounds.min.y / gridSize) * gridSize
-		if (xGridOffset !== 0) xLabel += gridSize
-		if (yGridOffset !== 0) yLabel += gridSize
-
-		for (var x = xGridOffset; x < boundsWidth; x += gridSize, xLabel += gridSize) {
-			if (almostEqual(x, xOriginOffset)) {
-				// Red origin line
-				ctx.save()
-				ctx.strokeStyle = originStrokeStyle
-				drawXGridLine(x * scale, xLabel)
-				ctx.restore()
-			}
-			else drawXGridLine(x * scale, xLabel)
-		}
-
-		for (var y = yGridOffset; y < boundsHeight; y += gridSize, yLabel += gridSize) {
-			if (almostEqual(y, yOriginOffset)) {
-				// Red origin line
-				ctx.save()
-				ctx.strokeStyle = originStrokeStyle
-				drawYGridLine(y * scale, yLabel)
-				ctx.restore()
-			}
-			else drawYGridLine(y * scale, yLabel)
-		}
-
-		// Draw crosshairs
-		if (!this.state.drawCursor || !mouse)
-			return
-
-		var crosshairX = mouse.position.x
-		var crosshairY = mouse.position.y
-
-		if (this.props.snapToGrid) {
-			crosshairX = Math.round(crosshairX / gridSize) * gridSize
-			crosshairY = Math.round(crosshairY / gridSize) * gridSize
-		}
-
-		const drawX = roundDrawCoord((crosshairX - bounds.min.x) * scale)
-		const drawY = roundDrawCoord((crosshairY - bounds.min.y) * scale)
-
-		ctx.strokeStyle = 'black'
-		ctx.setLineDash([5, 8])
-		ctx.beginPath()
-		ctx.moveTo(drawX, 0)
-		ctx.lineTo(drawX, canvasHeight)
-		ctx.stroke()
-
-		ctx.beginPath()
-		ctx.moveTo(0, drawY)
-		ctx.lineTo(canvasWidth, drawY)
-		ctx.stroke()
-
-		// Draw coordinates
-		ctx.fillText(`${round(crosshairX, 2)}, ${round(crosshairY, 2)}`, drawX + 10, drawY - 10)
+	onBeforeRender = event => {
+		const render = event.source
+		render.options.gridSize = this.props.gridSize
+		render.options.showCrosshair = this.state.showCrosshair
+		render.options.crosshairSnap = this.props.snapToGrid
 	}
 
 	onBodyDragStart = event => {
@@ -337,12 +234,12 @@ export default class Server extends PureComponent {
 
 	onMouseOver = event => {
 		// Show crosshair and coords
-		this.setState({ drawCursor: true })
+		this.setState({ showCrosshair: true })
 	}
 
 	onMouseOut = event => {
 		// Hide crosshair and coords
-		this.setState({ drawCursor: false })
+		this.setState({ showCrosshair: false })
 	}
 
 	onWheel = event => {

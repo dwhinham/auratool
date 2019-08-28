@@ -8,6 +8,7 @@ var RenderAuraProj = {};
 
 module.exports = RenderAuraProj;
 
+var lodash = require('lodash');
 var Common = require('matter-js/src/core/Common');
 var Composite = require('matter-js/src/body/Composite');
 var Bounds = require('matter-js/src/geometry/Bounds');
@@ -52,6 +53,7 @@ var Mouse = require('matter-js/src/core/Mouse');
                 pixelRatio: 1,
                 background: '#18181d',
                 wireframeBackground: '#0f0f13',
+                gridSize: 50,
                 hasBounds: !!options.bounds,
                 enabled: true,
                 wireframes: true,
@@ -70,7 +72,9 @@ var Mouse = require('matter-js/src/core/Mouse');
                 showVertexNumbers: false,
                 showConvexHulls: false,
                 showInternalEdges: false,
-                showMousePosition: false
+                showMousePosition: false,
+                showGrid: true,
+                crosshairSnap: false,
             }
         };
 
@@ -281,6 +285,116 @@ var Mouse = require('matter-js/src/core/Mouse');
         render.context.setTransform(render.options.pixelRatio, 0, 0, render.options.pixelRatio, 0, 0);
     };
 
+    RenderAuraProj.drawGrid = function(render, context) {
+		const gridSize = render.options.gridSize
+		const canvasWidth = render.canvas.width
+		const canvasHeight = render.canvas.height
+		const bounds = render.bounds
+
+		// Convert between viewport/canvas coords
+		const boundsWidth = (bounds.max.x - bounds.min.x)
+		const boundsHeight = (bounds.max.y - bounds.min.y)
+		const scale = canvasWidth / boundsWidth
+
+		const xOriginOffset = -bounds.min.x
+		const yOriginOffset = -bounds.min.y
+
+		const xGridOffset = _mod(xOriginOffset, gridSize)
+		const yGridOffset = _mod(yOriginOffset, gridSize)
+
+		const gridStrokeStyle = 'rgb(128, 128, 255, 0.2)'
+		const originStrokeStyle = 'rgb(255, 128, 128, 0.5)'
+
+		context.lineWidth = 1
+		context.setLineDash([])
+        context.strokeStyle = gridStrokeStyle
+        context.fillStyle = 'black'
+
+		const drawXGridLine = (x, label) => {
+			x = _roundDrawCoord(x)
+			context.beginPath()
+			context.moveTo(x, 0)
+			context.lineTo(x, canvasHeight)
+			context.stroke()
+
+			context.fillText(label, x + 2, canvasHeight - 2)
+		}
+
+		const drawYGridLine = (y, label) => {
+			y = _roundDrawCoord(y)
+			context.beginPath()
+			context.moveTo(0, y)
+			context.lineTo(canvasWidth, y)
+			context.stroke()
+
+			context.fillText(label, 0, y + 2)
+		}
+
+		// Axis labels
+		var xLabel = Math.floor(bounds.min.x / gridSize) * gridSize
+		var yLabel = Math.floor(bounds.min.y / gridSize) * gridSize
+		if (xGridOffset !== 0) xLabel += gridSize
+		if (yGridOffset !== 0) yLabel += gridSize
+
+		for (var x = xGridOffset; x < boundsWidth; x += gridSize, xLabel += gridSize) {
+			if (_almostEqual(x, xOriginOffset)) {
+				// Red origin line
+				context.save()
+				context.strokeStyle = originStrokeStyle
+				drawXGridLine(x * scale, xLabel)
+				context.restore()
+			}
+			else drawXGridLine(x * scale, xLabel)
+		}
+
+		for (var y = yGridOffset; y < boundsHeight; y += gridSize, yLabel += gridSize) {
+			if (_almostEqual(y, yOriginOffset)) {
+				// Red origin line
+				context.save()
+				context.strokeStyle = originStrokeStyle
+				drawYGridLine(y * scale, yLabel)
+				context.restore()
+			}
+			else drawYGridLine(y * scale, yLabel)
+		}
+    };
+
+    RenderAuraProj.drawCrosshair = function(render, context) {
+		const scale = render.canvas.width / (render.bounds.max.x - render.bounds.min.x)
+        const gridSize = render.options.gridSize
+
+		if (!render.mouse)
+			return
+
+		var crosshairX = render.mouse.position.x
+        var crosshairY = render.mouse.position.y
+
+		if (render.options.crosshairSnap) {
+			crosshairX = Math.round(crosshairX / gridSize) * gridSize
+			crosshairY = Math.round(crosshairY / gridSize) * gridSize
+		}
+
+		const drawX = _roundDrawCoord((crosshairX - render.bounds.min.x) * scale)
+		const drawY = _roundDrawCoord((crosshairY - render.bounds.min.y) * scale)
+
+        context.setLineDash([5, 8])
+        context.strokeStyle = 'black'
+        context.fillStyle = 'black'
+        
+		context.beginPath()
+		context.moveTo(drawX, 0)
+		context.lineTo(drawX, render.canvas.height)
+		context.stroke()
+
+		context.beginPath()
+		context.moveTo(0, drawY)
+		context.lineTo(render.canvas.width, drawY)
+		context.stroke()
+
+		// Draw coordinates
+		context.fillText(`${lodash.round(crosshairX, 2)}, ${lodash.round(crosshairY, 2)}`, drawX + 10, drawY - 10)
+    };
+
     /**
      * Renders the given `engine`'s `Matter.World` object.
      * This is the entry point for all rendering and should be called every time the scene changes.
@@ -315,6 +429,10 @@ var Mouse = require('matter-js/src/core/Mouse');
         context.fillStyle = "transparent";
         context.fillRect(0, 0, canvas.width, canvas.height);
         context.globalCompositeOperation = 'source-over';
+
+        // Render grid
+        if (render.options.showGrid)
+            RenderAuraProj.drawGrid(render, context);
 
         // handle bounds
         if (options.hasBounds) {
@@ -414,6 +532,10 @@ var Mouse = require('matter-js/src/core/Mouse');
             // revert view transforms
             RenderAuraProj.endViewTransform(render);
         }
+
+        // Render crosshair
+        if (render.options.showCrosshair)
+            RenderAuraProj.drawCrosshair(render, context);
 
         Events.trigger(render, 'afterRender', event);
     };
@@ -1390,6 +1512,32 @@ var Mouse = require('matter-js/src/core/Mouse');
         render.canvas.style.backgroundSize = "contain";
         render.currentBackground = background;
     };
+
+    /**
+     * Performs modulo operation, handling negative numbers.
+     * @method mod
+     * @private
+     * @param {} x
+     * @param {} n
+     */
+    var _mod = function(x, n) { return (x % n + n) % n };
+
+    /**
+     * Compares two floating-point numbers for near-equality using an epsilon value.
+     * @method almostEqual
+     * @private
+     * @param {} a
+     * @param {} b
+     */
+    var _almostEqual = function(a, b) { return Math.abs(a - b) < 0.00001 };
+
+    /**
+     * Aligns a draw coordinate.
+     * @method roundDrawCoord
+     * @private
+     * @param {} x
+     */
+    var _roundDrawCoord = function(x) { return Math.round(x) + 0.5 };
 
     /*
     *
