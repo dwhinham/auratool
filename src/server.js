@@ -1,8 +1,9 @@
 import React, { PureComponent } from 'react'
-
 import Matter from 'matter-js'
-
 import { random, round } from 'lodash'
+
+// Custom renderer
+const RenderAuraProj = require('./renderauraproj')
 
 export const MouseMode = {
 	PAN: 'pan',
@@ -61,7 +62,7 @@ export default class Server extends PureComponent {
 		})
 
 		// Create a renderer
-		this.matterRender = Matter.Render.create({
+		this.matterRender = RenderAuraProj.create({
 			// Bounds begin centered about the origin
 			bounds: {
 				min: {
@@ -115,7 +116,7 @@ export default class Server extends PureComponent {
 		Matter.Engine.run(this.matterEngine)
 
 		// Run the renderer
-		Matter.Render.run(this.matterRender)
+		RenderAuraProj.run(this.matterRender)
 	}
 
 	onAfterRender = event => {
