@@ -10,8 +10,16 @@ import UtilSim from './utilsim'
 
 // Setup Font Awesome
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faArrowsAlt, faBorderAll, faChartLine, faCheckSquare, faHome, faMagnet, faPlus, faPalette, faTrash } from '@fortawesome/free-solid-svg-icons'
-library.add(faArrowsAlt, faBorderAll, faChartLine, faCheckSquare, faHome, faMagnet, faPlus, faPalette, faTrash)
+import {
+	faArrowsAlt, faBorderAll, faChartLine,
+	faCheckSquare, faHome, faMagnet, faPlus,
+	faPalette, faTh, faThLarge, faTrash
+} from '@fortawesome/free-solid-svg-icons'
+library.add(
+	faArrowsAlt, faBorderAll, faChartLine,
+	faCheckSquare, faHome, faMagnet, faPlus,
+	faPalette, faTh, faThLarge, faTrash
+)
 
 // Setup Why Did You Render?
 // if (process.env.NODE_ENV !== 'production') {

@@ -227,8 +227,14 @@ export default class UtilSim extends Component {
 											</Button>
 										</ButtonGroup>
 										<ButtonGroup>
-											<Button size="sm" active={this.state.snapToGrid} onClick={() => { this.setState({snapToGrid: !this.state.snapToGrid })}}>
+										<Button size="sm" active={this.state.snapToGrid} onClick={() => { this.setState({snapToGrid: !this.state.snapToGrid })}}>
 												<FontAwesomeIcon icon="magnet"></FontAwesomeIcon>
+											</Button>
+											<Button size="sm" onClick={() => { this.setState({gridSize: Math.max(25, this.state.gridSize - 25)})}}>
+												<FontAwesomeIcon icon="th"></FontAwesomeIcon>
+											</Button>
+											<Button size="sm" onClick={() => { this.setState({gridSize: this.state.gridSize + 25})}}>
+												<FontAwesomeIcon icon="th-large"></FontAwesomeIcon>
 											</Button>
 										</ButtonGroup>
 									</ButtonToolbar>
