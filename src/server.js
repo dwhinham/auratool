@@ -52,6 +52,10 @@ export default class Server extends PureComponent {
 		canvas.width  = canvas.offsetWidth
 		canvas.height = canvas.offsetHeight
 
+		// Prevent menus on canvas
+		canvas.oncontextmenu = () => false
+		canvas.onselectstart = () => false		
+
 		// Add mouse control
 		this.matterMouse = Matter.Mouse.create(canvas)
 		this.matterMouseConstraint = Matter.MouseConstraint.create(this.matterEngine, {
