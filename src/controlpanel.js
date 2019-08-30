@@ -106,6 +106,12 @@ export default function ControlPanel(props) {
 				</Row>
 			</Tab>
 
+			<Tab eventKey="boundaries" title="Boundaries">
+				<ul>
+					{ props.boundaries.map((b, i) => <li key={i}>{`Boundary ${i}: {${b.bounds.min.x}, ${b.bounds.min.y}} => {${b.bounds.max.x}, ${b.bounds.max.y}}`}</li> )}
+				</ul>
+			</Tab>
+
 			<Tab eventKey="objects" title="Objects">
 				<ul>
 					{ Object.keys(props.objects).map((o, i) => {

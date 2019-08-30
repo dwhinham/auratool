@@ -4,6 +4,7 @@ import evaluatex from 'evaluatex/dist/evaluatex';
 import FunctionPlot from './functionplot'
 import ControlPanel from './controlpanel'
 import Server, { MouseMode } from './server'
+import Util from './util'
 
 import Button from 'react-bootstrap/Button'
 import ButtonToolbar from 'react-bootstrap/ButtonToolbar'
@@ -16,7 +17,6 @@ import { vars } from './variables'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 const colors = [
-	"#001f3f",
 	"#0074D9",
 	"#7FDBFF",
 	"#39CCCC",
@@ -31,7 +31,8 @@ const colors = [
 	"#B10DC9",
 	"#111111",
 	"#AAAAAA",
-	"#DDDDDD"
+	"#DDDDDD",
+	"#001f3f",
 ]
 
 export default class UtilSim extends Component {
@@ -52,6 +53,8 @@ export default class UtilSim extends Component {
 			snapToGrid: false,
 
 			objects: {},
+			boundaries: [],
+
 			vars: vars,
 			utilFunctions: [
 				{
@@ -131,6 +134,61 @@ export default class UtilSim extends Component {
 		// 		}
 		// 	}
 		// })
+	}
+	
+	// Validate the bounds
+	validateBoundary = (bounds, indexToIgnore = null) => {
+		// Reject min == max
+		if (bounds.min.x === bounds.max.x || bounds.min.y === bounds.max.y)
+			return false
+
+		// Reject overlapping boundaries
+		return this.state.boundaries.every((boundary, i) => {
+			// Prevent comparison against self
+			if (indexToIgnore !== null && indexToIgnore === i)
+				return true
+
+			// Check it doesn't overlap
+			return !Util.boundsOverlap(bounds, boundary.bounds)
+		})
+	}
+
+	onBoundaryAdded = bounds => {
+		if (!this.validateBoundary(bounds))
+			return
+
+		console.log(`new boundary: {${bounds.min.x}, ${bounds.min.y}} -> {${bounds.max.x}, ${bounds.max.y}}`)
+		var boundaries = this.state.boundaries.slice()
+		boundaries.push({
+			bounds: bounds,
+			color: colors[boundaries.length % colors.length]
+		})
+		this.setState({ boundaries })
+	}
+
+	onBoundaryDeleted = index => {
+		var boundaries = this.state.boundaries.slice()
+		boundaries.splice(index, 1)
+		this.setState({boundaries})
+	}
+
+	onBoundaryUpdated = (index, bounds) => {
+		if (!this.validateBoundary(bounds, index))
+			return
+		console.log(`updating boundary index ${index} to {${bounds.min.x}, ${bounds.min.y}} -> {${bounds.max.x}, ${bounds.max.y}}`)
+
+		var boundaries = this.state.boundaries.slice()
+		if (!boundaries[index]) {
+			console.log("erm")
+			return
+		}
+
+		const oldBounds = boundaries[index].bounds
+		oldBounds.min.x = bounds.min.x
+		oldBounds.min.y = bounds.min.y
+		oldBounds.max.x = bounds.max.x
+		oldBounds.max.y = bounds.max.y
+		this.setState({boundaries})
 	}
 
 	onUtilFunctionInputChanged = event => {
@@ -222,7 +280,7 @@ export default class UtilSim extends Component {
 											<Button size="sm" active={this.state.mouseMode === MouseMode.PAN} onClick={() => { this.setState({mouseMode: MouseMode.PAN })}}>
 												<FontAwesomeIcon icon="arrows-alt"></FontAwesomeIcon>
 											</Button>
-											<Button size="sm" active={this.state.mouseMode === MouseMode.DRAW_BOUNDARY} onClick={() => { this.setState({mouseMode: MouseMode.DRAW_BOUNDARY })}}>
+											<Button size="sm" active={this.state.mouseMode === MouseMode.BOUNDARY_EDIT} onClick={() => { this.setState({mouseMode: MouseMode.BOUNDARY_EDIT })}}>
 												<FontAwesomeIcon icon="border-all"></FontAwesomeIcon>
 											</Button>
 											<Button size="sm" active={this.state.mouseMode === MouseMode.SNOOKER} onClick={() => { this.setState({mouseMode: MouseMode.SNOOKER })}}>
@@ -247,6 +305,7 @@ export default class UtilSim extends Component {
 								<Col>
 									<Server
 										ref={this.serverRef}
+										boundaries={this.state.boundaries}
 										//objects={this.state.objects}
 
 										// State
@@ -255,6 +314,10 @@ export default class UtilSim extends Component {
 										snapToGrid={this.state.snapToGrid}
 
 										// Callbacks
+										onBoundaryAdded={this.onBoundaryAdded}
+										onBoundaryUpdated={this.onBoundaryUpdated}
+										onBoundaryDeleted={this.onBoundaryDeleted}
+
 										onObjectAdded={this.onObjectAdded}
 										onObjectDeleted={this.onObjectDeleted}
 										onAfterUpdate={this.onAfterUpdate}
@@ -271,6 +334,7 @@ export default class UtilSim extends Component {
 						<Col>
 							<ControlPanel
 								// Physics state
+								boundaries={this.state.boundaries}
 								objects={this.state.objects}
 								vars={this.state.vars}
 								utilFunctions={this.state.utilFunctions}

@@ -378,6 +378,7 @@ var Mouse = require('matter-js/src/core/Mouse');
 		const drawY = _roundDrawCoord((crosshairY - render.bounds.min.y) * scale)
 
         context.setLineDash([5, 8])
+        context.lineWidth = 1
         context.strokeStyle = 'black'
         context.fillStyle = 'black'
         
@@ -433,6 +434,8 @@ var Mouse = require('matter-js/src/core/Mouse');
         // Render grid
         if (render.options.showGrid)
             RenderAuraProj.drawGrid(render, context);
+
+        Events.trigger(render, 'beforeObjects', event);
 
         // handle bounds
         if (options.hasBounds) {
@@ -533,11 +536,11 @@ var Mouse = require('matter-js/src/core/Mouse');
             RenderAuraProj.endViewTransform(render);
         }
 
+        Events.trigger(render, 'afterRender', event);
+
         // Render crosshair
         if (render.options.showCrosshair)
             RenderAuraProj.drawCrosshair(render, context);
-
-        Events.trigger(render, 'afterRender', event);
     };
 
     /**
@@ -763,11 +766,11 @@ var Mouse = require('matter-js/src/core/Mouse');
                 if (!part.render.visible)
                     continue;
 
-                if (options.showSleeping && body.isSleeping) {
-                    c.globalAlpha = 0.5 * part.render.opacity;
-                } else if (part.render.opacity !== 1) {
-                    c.globalAlpha = part.render.opacity;
-                }
+                // if (options.showSleeping && body.isSleeping) {
+                //     c.globalAlpha = 0.5 * part.render.opacity;
+                // } else if (part.render.opacity !== 1) {
+                //     c.globalAlpha = part.render.opacity;
+                // }
 
                 if (part.render.sprite && part.render.sprite.texture && !options.wireframes) {
                     // part sprite
@@ -814,7 +817,11 @@ var Mouse = require('matter-js/src/core/Mouse');
                     }
 
                     if (!options.wireframes) {
-                        c.fillStyle = part.render.fillStyle;
+                        if (options.showSleeping && body.isSleeping) {
+                            c.fillStyle = _colorLuminance(part.render.fillStyle, -0.2)
+                        } else {
+                            c.fillStyle = part.render.fillStyle;
+                        }
 
                         if (part.render.lineWidth) {
                             c.lineWidth = part.render.lineWidth;
@@ -1538,6 +1545,29 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {} x
      */
     var _roundDrawCoord = function(x) { return Math.round(x) + 0.5 };
+
+    /**
+     * Adjusts a hex string color value's luminosity.
+     * Borrowed from https://www.sitepoint.com/javascript-generate-lighter-darker-color/
+    */
+    var _colorLuminance = (hex, lum) => {
+        // validate hex string
+        hex = String(hex).replace(/[^0-9a-f]/gi, '');
+        if (hex.length < 6) {
+            hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+        }
+        lum = lum || 0;
+
+        // convert to decimal and change luminosity
+        var rgb = "#", c, i;
+        for (i = 0; i < 3; i++) {
+            c = parseInt(hex.substr(i*2,2), 16);
+            c = Math.round(Math.min(Math.max(0, c + (c * lum)), 255)).toString(16);
+            rgb += ("00"+c).substr(c.length);
+        }
+
+        return rgb;
+    }
 
     /*
     *
