@@ -7,7 +7,7 @@ import { random } from 'lodash'
 const RenderAuraProj = require('./renderauraproj')
 
 export const MouseMode = {
-	PAN: 'pan',
+	OBJECT: 'object',
 	BOUNDARY_EDIT: 'boundary_edit',
 	SNOOKER: 'snooker',
 }
@@ -119,9 +119,6 @@ export default class Server extends PureComponent {
 		Matter.World.add(this.matterEngine.world, body)	
 
 		// Mouse handlers
-		Matter.Events.on(this.matterMouseConstraint, 'mousedown', this.onMouseDown)
-		Matter.Events.on(this.matterMouseConstraint, 'mouseup', this.onMouseUp)
-		Matter.Events.on(this.matterMouseConstraint, 'mousemove', this.onMouseMove)
 		Matter.Events.on(this.matterMouseConstraint, 'startdrag', this.onBodyDragStart)
 		Matter.Events.on(this.matterMouseConstraint, 'enddrag', this.onBodyDragEnd)
 
@@ -142,7 +139,7 @@ export default class Server extends PureComponent {
 
 	onBeforeUpdate = event => {
 		// Should we disable the mouse constraint (grab objects?)
-		if (this.props.mouseMode !== MouseMode.PAN)
+		if (this.props.mouseMode !== MouseMode.OBJECT)
 			this.matterMouseConstraint.collisionFilter.mask = 0
 		else
 			this.matterMouseConstraint.collisionFilter.mask = 0xFFFFFFFF
@@ -177,9 +174,9 @@ export default class Server extends PureComponent {
 			context.strokeStyle = 'black'
 
 			if (this.props.mouseMode === MouseMode.BOUNDARY_EDIT && (isClickedBoundary || mouseInBounds))
-				context.globalAlpha = 0.75
+				context.globalAlpha = 0.6
 			else
-				context.globalAlpha = 0.5
+				context.globalAlpha = 0.4
 
 			context.beginPath()
 			context.fillRect(topLeft.x, topLeft.y, extents.x, extents.y)
@@ -229,25 +226,15 @@ export default class Server extends PureComponent {
 	}
 
 	onBodyDragStart = event => {
-		this.setState({
-			draggingBody: true,
-			dragStartPos: Object.assign({}, event.mouse.position)
-		})
+		this.setState({ draggingBody: true })
 	}
 
 	onBodyDragEnd = event => {
-		const oldPos = this.state.dragStartPos
-		const newPos = event.mouse.position
-
-		// Clicked on an object without dragging - delete it
-		if (oldPos.x === newPos.x && oldPos.y === newPos.y) {
-			this.props.onObjectDeleted(event.body.id)
-			Matter.Composite.remove(this.matterEngine.world, event.body)
-		}
+		this.setState({ draggingBody: false })
 	}
 
 	checkResizeMode = bounds => {
-		const threshold = 5
+		const threshold = 10
 		var resizeMode = null
 
 		const mousePosCanvas = this.getMousePos(true, true)
@@ -284,7 +271,7 @@ export default class Server extends PureComponent {
 		return resizeMode
 	}
 
-	updateCanvasCursorStyle = resizeMode => {
+	updateCanvasCursorStyle = (resizeMode = null, boundaryUnderMouse = null) => {
 		const canvas = this.canvasRef.current
 
 		switch (resizeMode) {
@@ -296,24 +283,33 @@ export default class Server extends PureComponent {
 			case ResizeMode.RIGHT_EDGE:				canvas.style.cursor = 'e-resize'; 	break;
 			case ResizeMode.TOP_EDGE:				canvas.style.cursor = 'n-resize'; 	break;
 			case ResizeMode.BOTTOM_EDGE:			canvas.style.cursor = 's-resize'; 	break;
-			default:								canvas.style.cursor = 'crosshair';	break;
+			default:			
+				if (boundaryUnderMouse && this.state.clickedBoundary)
+					canvas.style.cursor = 'grabbing';
+				else if (boundaryUnderMouse)
+					canvas.style.cursor = 'grab';
+				else					
+					canvas.style.cursor = 'crosshair';
+				break;
 		}
 	}
 
 	onMouseDown = event => {
 		const mousePos = this.getMousePos()
 		const mousePosCanvas = this.getMousePos(true)
+
 		this.setState({
+			mouseButton: event.button,
 			mouseDownPos: mousePos,
 			mouseDownPosCanvas: mousePosCanvas
 		})
 
 		switch (this.props.mouseMode) {
 			case MouseMode.SNOOKER: {
-				// Did we click on an object?
-				const allBodies = Matter.Composite.allBodies(this.matterEngine.world)
-				const bodies = Matter.Query.point(allBodies, mousePos)
-				this.setState({snookerBody: bodies[0]})
+				// Did we left-click on an object?
+				if (event.button === 0) {
+					this.setState({snookerBody: this.bodyAtPosition(mousePos)})
+				}
 				break
 			}
 
@@ -322,9 +318,14 @@ export default class Server extends PureComponent {
 				if (!boundary)
 					break
 
-				// Mouse went down over a boundary - was it near an edge?
-				const resizeMode = this.checkResizeMode(boundary.bounds)
-				this.updateCanvasCursorStyle(resizeMode)
+				// Left-click: check & prepare for resize
+				var resizeMode = null
+				if (event.button === 0) {
+					resizeMode = this.checkResizeMode(boundary.bounds)
+					this.updateCanvasCursorStyle(resizeMode, boundary)
+				}
+
+				// Mouse button went down over a boundary
 				this.setState({
 					clickedBoundary: boundary,
 					resizeOldBounds: {
@@ -343,31 +344,36 @@ export default class Server extends PureComponent {
 
 	onMouseUp = event => {
 		const mousePos = this.getMousePos()
-		const mousePosCanvas = this.getMousePos(true)
-		const click = this.state.mouseDownPosCanvas.x === mousePosCanvas.x && this.state.mouseDownPosCanvas.y === mousePosCanvas.y
-		
+
 		switch (this.props.mouseMode) {
-			case MouseMode.PAN: {
-				// Just finished dragging an object, bail out
-				if (this.state.dragStartPos) {
-					this.setState({
-						draggingBody: false,
-						dragStartPos: null
-					})
+			case MouseMode.OBJECT: {
+				// Dragging an object, bail out
+				if (this.state.draggingBody)
 					break
+
+				// Left-click: add new object
+				if (event.button === 0) {
+					const body = Matter.Bodies.circle(mousePos.x, mousePos.y, 10, { restitution: 0.5 })
+				
+					Matter.World.add(this.matterEngine.world, body)
+					this.props.onObjectAdded(body)
 				}
 
-				// Add new object
-				const body = Matter.Bodies.circle(mousePos.x, mousePos.y, 10, { restitution: 0.5 })
-				
-				Matter.World.add(this.matterEngine.world, body)
-				this.props.onObjectAdded(body)
+				// Right-click: delete object
+				else if (event.button === 2) {
+					const body = this.bodyAtPosition(mousePos)
+					if (body) {
+						this.props.onObjectDeleted(body.id)
+						Matter.Composite.remove(this.matterEngine.world, body)
+					}
+				}
+
 				break
 			}
 
 			case MouseMode.SNOOKER: {
-				if (!this.state.snookerBody)
-					break;
+				if (!this.state.snookerBody || event.button !== 0)
+					break
 
 				const body = this.state.snookerBody
 				const force = Matter.Vector.mult(Matter.Vector.sub(body.position, mousePos), 0.001 * body.mass)
@@ -384,18 +390,17 @@ export default class Server extends PureComponent {
 						resizeMode: null,
 						resizeOldBounds: null
 					})
-					this.updateCanvasCursorStyle(null)
 					break
 				}
 
-				// Did we click on an existing boundary? Delete it and bail out
-				if (click && this.state.clickedBoundary && this.props.onBoundaryDeleted) {
+				// Did we right-click on an existing boundary? Delete it and bail out
+				if (this.props.onBoundaryDeleted && event.button === 2 && this.state.clickedBoundary) {
 					this.props.onBoundaryDeleted(this.state.clickedBoundary.index)
 					break
 				}
 
 				// Otherwise, add a new boundary
-				if (this.props.onBoundaryAdded && this.state.mouseDownPos)
+				if (this.props.onBoundaryAdded && event.button === 0 && this.state.mouseDownPos)
 					this.props.onBoundaryAdded(Util.createBounds(this.state.mouseDownPos, mousePos))
 
 				break
@@ -405,50 +410,54 @@ export default class Server extends PureComponent {
 		}
 
 		this.setState({
+			mouseButton: null,
 			mouseDownPos: null,
 			mouseDownPosCanvas: null,
 			clickedBoundary: null
 		})
+
+		this.updateCanvasCursorStyle(null, this.boundaryUnderMouse())
 	}
 
 	onMouseMove = event => {
 		const mousePos = this.getMousePos()
 
-		// Drag actions
-		switch (this.props.mouseMode) {
-			case MouseMode.PAN: {
-				if (!this.state.mouseDownPos || this.state.draggingBody)
-					return
+		// Right click always pans
+		if (this.state.mouseButton === 2) {
+			if (!this.state.mouseDownPos || this.state.draggingBody)
+				return
 
-				const bounds = this.matterRender.bounds
-				const delta = {
-					x: event.mouse.position.x - this.state.mouseDownPos.x,
-					y: event.mouse.position.y - this.state.mouseDownPos.y
-				}
-
-				// Reposition viewport
-				bounds.min = Matter.Vector.sub(bounds.min, delta)
-				bounds.max = Matter.Vector.sub(bounds.max, delta)
-
-				// Update mouse offset
-				Matter.Mouse.setOffset(this.matterMouseConstraint.mouse, bounds.min)
-				break
+			const bounds = this.matterRender.bounds
+			const delta = {
+				x: mousePos.x - this.state.mouseDownPos.x,
+				y: mousePos.y - this.state.mouseDownPos.y
 			}
 
+			// Reposition viewport
+			bounds.min = Matter.Vector.sub(bounds.min, delta)
+			bounds.max = Matter.Vector.sub(bounds.max, delta)
+
+			// Update mouse offset
+			Matter.Mouse.setOffset(this.matterMouseConstraint.mouse, bounds.min)
+			return
+		}
+
+		// Left click actions
+		switch (this.props.mouseMode) {
 			case MouseMode.BOUNDARY_EDIT: {
-				// Not resizing
-				if (!this.state.resizeMode) {
-					// Not in the middle of a resize - just update the cursor
+				// Not resizing or moving
+				if (!this.state.resizeMode && !this.state.clickedBoundary) {
+					// Just look for a boundary under the mouse and update the cursor
 					const boundary = this.boundaryUnderMouse()
 					if (boundary)
-						this.updateCanvasCursorStyle(this.checkResizeMode(boundary.bounds))
+						this.updateCanvasCursorStyle(this.checkResizeMode(boundary.bounds), boundary)
 					else
 						this.updateCanvasCursorStyle(null)
 					break
 				}
 
-				// Resizing: move the boundary edges 
-				if (!this.props.onBoundaryUpdated)
+				// Bail out if we don't have a callback or a clicked boundary
+				if (!this.props.onBoundaryUpdated || !this.state.clickedBoundary)
 					break
 
 				const oldBounds = this.state.resizeOldBounds
@@ -495,11 +504,20 @@ export default class Server extends PureComponent {
 						break
 					
 					default:
+						// Moving
+						if (!this.state.mouseDownPos)
+							break
+						const mouseDelta = Matter.Vector.sub(mousePos, this.state.mouseDownPos)
+						newBounds.min = Matter.Vector.add(newBounds.min, mouseDelta)
+						newBounds.max = Matter.Vector.add(newBounds.max, mouseDelta)
 						break
 				}
 
 				// Fixup so that min is always at the top left and max is always at the bottom right
 				newBounds = Util.createBounds(newBounds.min, newBounds.max)
+
+				// Update cursor
+				this.updateCanvasCursorStyle(this.state.resizeMode, this.state.clickedBoundary)
 
 				this.props.onBoundaryUpdated(this.state.clickedBoundary.index, newBounds)
 				break
@@ -520,7 +538,8 @@ export default class Server extends PureComponent {
 			showCrosshair: false,
 
 			// Clear drawing/resizing state
-			mouseDownPos: null
+			mouseDownPos: null,
+			clickedBoundary: null
 		})
 	}
 
@@ -572,6 +591,12 @@ export default class Server extends PureComponent {
 		return boundaryUnder
 	}
 
+	bodyAtPosition = pos => {
+		const allBodies = Matter.Composite.allBodies(this.matterEngine.world)
+		const bodies = Matter.Query.point(allBodies, pos)
+		return bodies[0]
+	}
+
 	// Get position of mouse in canvas or world space (snapped to grid if necessary)
 	getMousePos = (canvas = false, forceUnsnapped = false) => {
 		const gridSize = this.props.gridSize
@@ -594,6 +619,9 @@ export default class Server extends PureComponent {
 			<div id={"canvasContainer"}>
 				<canvas
 					ref={this.canvasRef}
+					onMouseDown={this.onMouseDown}
+					onMouseUp={this.onMouseUp}
+					onMouseMove={this.onMouseMove}
 					onMouseOver={this.onMouseOver}
 					onMouseOut={this.onMouseOut}
 					onWheel={this.onWheel}

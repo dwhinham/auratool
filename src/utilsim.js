@@ -48,7 +48,7 @@ export default class UtilSim extends Component {
 			showColorPicker: false,
 			colorIndex: 0,
 
-			mouseMode: MouseMode.PAN,
+			mouseMode: MouseMode.OBJECT,
 			gridSize: 50,
 			snapToGrid: false,
 
