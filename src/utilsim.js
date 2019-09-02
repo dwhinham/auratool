@@ -157,7 +157,6 @@ export default class UtilSim extends Component {
 		if (!this.validateBoundary(bounds))
 			return
 
-		console.log(`new boundary: {${bounds.min.x}, ${bounds.min.y}} -> {${bounds.max.x}, ${bounds.max.y}}`)
 		var boundaries = this.state.boundaries.slice()
 		boundaries.push({
 			bounds: bounds,
@@ -175,13 +174,8 @@ export default class UtilSim extends Component {
 	onBoundaryUpdated = (index, bounds) => {
 		if (!this.validateBoundary(bounds, index))
 			return
-		console.log(`updating boundary index ${index} to {${bounds.min.x}, ${bounds.min.y}} -> {${bounds.max.x}, ${bounds.max.y}}`)
 
-		var boundaries = this.state.boundaries.slice()
-		if (!boundaries[index]) {
-			console.log("erm")
-			return
-		}
+		const boundaries = this.state.boundaries.slice()
 
 		const oldBounds = boundaries[index].bounds
 		oldBounds.min.x = bounds.min.x
@@ -274,27 +268,27 @@ export default class UtilSim extends Component {
 								<Col>
 									<ButtonToolbar className="mb-2">
 										<ButtonGroup className="mr-2">
-											<Button size="sm" onClick={this.onHomeClicked}><FontAwesomeIcon icon="home"></FontAwesomeIcon></Button>
+											<Button size="sm" variant="secondary" onClick={this.onHomeClicked}><FontAwesomeIcon icon="home"></FontAwesomeIcon></Button>
 										</ButtonGroup>
 										<ButtonGroup className="mr-2">
-											<Button size="sm" active={this.state.mouseMode === MouseMode.PAN} onClick={() => { this.setState({mouseMode: MouseMode.PAN })}}>
-												<FontAwesomeIcon icon="arrows-alt"></FontAwesomeIcon>
+											<Button size="sm" variant="secondary" active={this.state.mouseMode === MouseMode.OBJECT} onClick={() => { this.setState({mouseMode: MouseMode.OBJECT })}}>
+												<FontAwesomeIcon icon="cube"></FontAwesomeIcon>
 											</Button>
-											<Button size="sm" active={this.state.mouseMode === MouseMode.BOUNDARY_EDIT} onClick={() => { this.setState({mouseMode: MouseMode.BOUNDARY_EDIT })}}>
-												<FontAwesomeIcon icon="border-all"></FontAwesomeIcon>
+											<Button size="sm" variant="secondary" active={this.state.mouseMode === MouseMode.BOUNDARY_EDIT} onClick={() => { this.setState({mouseMode: MouseMode.BOUNDARY_EDIT })}}>
+												<FontAwesomeIcon icon="vector-square"></FontAwesomeIcon>
 											</Button>
-											<Button size="sm" active={this.state.mouseMode === MouseMode.SNOOKER} onClick={() => { this.setState({mouseMode: MouseMode.SNOOKER })}}>
+											<Button size="sm" variant="secondary" active={this.state.mouseMode === MouseMode.SNOOKER} onClick={() => { this.setState({mouseMode: MouseMode.SNOOKER })}}>
 												<FontAwesomeIcon icon="bowling-ball"></FontAwesomeIcon>
 											</Button>
 										</ButtonGroup>
 										<ButtonGroup>
-										<Button size="sm" active={this.state.snapToGrid} onClick={() => { this.setState({snapToGrid: !this.state.snapToGrid })}}>
+											<Button size="sm" variant="secondary" active={this.state.snapToGrid} onClick={() => { this.setState({snapToGrid: !this.state.snapToGrid })}}>
 												<FontAwesomeIcon icon="magnet"></FontAwesomeIcon>
 											</Button>
-											<Button size="sm" onClick={() => { this.setState({gridSize: Math.max(25, this.state.gridSize - 25)})}}>
+											<Button size="sm" variant="secondary" onClick={() => { this.setState({gridSize: Math.max(25, this.state.gridSize / 2)}) }}>
 												<FontAwesomeIcon icon="th"></FontAwesomeIcon>
 											</Button>
-											<Button size="sm" onClick={() => { this.setState({gridSize: this.state.gridSize + 25})}}>
+											<Button size="sm" variant="secondary" onClick={() => { this.setState({gridSize: this.state.gridSize * 2}) }}>
 												<FontAwesomeIcon icon="th-large"></FontAwesomeIcon>
 											</Button>
 										</ButtonGroup>

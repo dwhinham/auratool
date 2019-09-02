@@ -11,14 +11,14 @@ import UtilSim from './utilsim'
 // Setup Font Awesome
 import { library } from '@fortawesome/fontawesome-svg-core'
 import {
-	faArrowsAlt, faBorderAll, faBowlingBall, faChartLine,
-	faCheckSquare, faHome, faMagnet, faPlus,
-	faPalette, faTh, faThLarge, faTrash
+	faBorderAll, faBowlingBall, faChartLine, faCube,
+	faHome, faMagnet, faPlus,
+	faPalette, faTh, faThLarge, faTrash, faVectorSquare
 } from '@fortawesome/free-solid-svg-icons'
 library.add(
-	faArrowsAlt, faBorderAll, faBowlingBall, faChartLine,
-	faCheckSquare, faHome, faMagnet, faPlus,
-	faPalette, faTh, faThLarge, faTrash
+	faBorderAll, faBowlingBall, faChartLine, faCube,
+	faHome, faMagnet, faPlus,
+	faPalette, faTh, faThLarge, faTrash, faVectorSquare
 )
 
 // Setup Why Did You Render?
