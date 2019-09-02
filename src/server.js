@@ -344,6 +344,10 @@ export default class Server extends PureComponent {
 
 	onMouseUp = event => {
 		const mousePos = this.getMousePos()
+		const mousePosCanvas = this.getMousePos(true)
+		const click = 	this.state.mouseButton === event.button &&
+						this.state.mouseDownPosCanvas.x === mousePosCanvas.x &&
+						this.state.mouseDownPosCanvas.y === mousePosCanvas.y
 
 		switch (this.props.mouseMode) {
 			case MouseMode.OBJECT: {
@@ -394,7 +398,7 @@ export default class Server extends PureComponent {
 				}
 
 				// Did we right-click on an existing boundary? Delete it and bail out
-				if (this.props.onBoundaryDeleted && event.button === 2 && this.state.clickedBoundary) {
+				if (this.props.onBoundaryDeleted && event.button === 2 && click && this.state.clickedBoundary) {
 					this.props.onBoundaryDeleted(this.state.clickedBoundary.index)
 					break
 				}
@@ -612,6 +616,8 @@ export default class Server extends PureComponent {
 
 		return canvas ? this.worldToCanvas(mousePos) : mousePos
 	}
+
+
 
 	render() {
 		return (
