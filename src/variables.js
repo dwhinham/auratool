@@ -18,27 +18,22 @@ there's also the cost of number of objects that are completely out of their host
 
 export const vars = {
     CPU_l: {
-        value: 0,
         type: "proportion",
         desc: "CPU load of the server.",
     },
     O_a: {
-        value: 0,
         type: "proportion",
         desc: "Number of active objects.",
     },
     O_b: {
-        value: 0,
         type: "proportion",
         desc: "Number of objects near a boundary.",
     },
     O_t: {
-        value: 0,
         type: "count",
         desc: "Total number of objects on the server.",
     },
     T_m: {
-        value: 0,
         type: "count",
         desc: "Time since boundaries were last moved (seconds)."
     }
@@ -46,25 +41,44 @@ export const vars = {
 
 export default function Variables(props) {
     return (
-        <Table hover striped size="sm">
-            <thead>
-                <tr>
-                    <th>Variable</th>
-                    <th>Value</th>
-                    <th>Type</th>
-                    <th>Description</th>
-                </tr>
-            </thead>
-            <tbody>
-            { Object.keys(props.vars).map((v, i) => { return (
-                <tr key={i}>
-                    <td><MathJax.Node>{v}</MathJax.Node></td>
-                    <td>{round(props.vars[v].value, 2)}</td>
-                    <td>{props.vars[v].type}</td>
-                    <td>{props.vars[v].desc}</td>
-                </tr>
-            )})}
-            </tbody>
-        </Table>
+        <div>
+            <Table hover striped size="sm">
+                <thead>
+                    <tr>
+                        <th>Variable</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                { Object.keys(vars).map((v, i) =>
+                    <tr key={i}>
+                        <td><MathJax.Node>{v}</MathJax.Node></td>
+                        <td>{vars[v].type}</td>
+                        <td>{vars[v].desc}</td>
+                    </tr>
+                )}
+                </tbody>
+            </Table>
+
+            <Table hover striped size="sm">
+                <thead>
+                    <tr>
+                        <th>Boundary</th>
+                        { Object.keys(vars).map((v, i) => <th key={i}><MathJax.Node>{v}</MathJax.Node></th>) }
+                    </tr>
+                </thead>
+                <tbody>
+                { props.boundaries.map((b, i) =>
+                    <tr key={i}>
+                        <td>{i}</td>
+                        { Object.keys(b.vars).map((v, j) =>
+                        <td key={j}>{round(b.vars[v], 2)}</td>
+                        )}
+                    </tr>
+                )}
+                </tbody>
+            </Table>
+        </div>
     )
 }

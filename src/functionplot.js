@@ -89,47 +89,49 @@ export default class FunctionPlot extends Component {
         return datasets
     })
 
-    updatePoints = memoize((funcs, vars) => {
+    updatePoints = memoize((funcs, vars, boundaries) => {
         var datasets = []
 
-        // Coerce the variables array into the right format for evaluatex
-        var evalVars = {}
-        Object.keys(vars).forEach(key => evalVars[key] = vars[key].value)
+        boundaries.forEach((b, i) => {
+            // Coerce the variables array into the right format for evaluatex
+            var evalVars = {}
+            Object.keys(b.vars).forEach(key => evalVars[key] = b.vars[key])
 
-        funcs.forEach(func => {
-            if (!func.evalFunc || func.plotVar === 'x')
-                return
+            funcs.forEach(func => {
+                if (!func.evalFunc || func.plotVar === 'x')
+                    return
 
-            try {
-                const { [func.plotVar]: plotVar, ...varsWithoutPlotVar } = evalVars
+                try {
+                    const { [func.plotVar]: plotVar, ...varsWithoutPlotVar } = evalVars
 
-                const x = evalVars[func.plotVar]
-                const y = func.evalFunc({
-                    [func.plotVar]: x,
+                    const x = evalVars[func.plotVar]
+                    const y = func.evalFunc({
+                        [func.plotVar]: x,
 
-                    // Constants
-                    e: Math.E,
-                    pi: Math.PI,
+                        // Constants
+                        e: Math.E,
+                        pi: Math.PI,
 
-                    // Variable values
-                    ...varsWithoutPlotVar
-                })
+                        // Variable values
+                        ...varsWithoutPlotVar
+                    })
 
-                datasets.push({
-                    label: func.plotVar,
-                    fill: true,
-                    showLine: false,
-                    pointRadius: 6,
-                    hoverRadius: 8,
-                    pointStyle: 'circle',
-                    pointHitRadius: 2,
-                    backgroundColor: func.color,
-                    borderColor: func.color,
-                    data: [{x, y}]
-                })
-            } catch(e) {
-                // Skip this function
-            }
+                    datasets.push({
+                        label: `B${i} ${func.plotVar}`,
+                        fill: true,
+                        showLine: false,
+                        pointRadius: 6,
+                        hoverRadius: 8,
+                        pointStyle: 'circle',
+                        pointHitRadius: 2,
+                        backgroundColor: b.color,
+                        borderColor: func.color,
+                        data: [{x, y}]
+                    })
+                } catch(e) {
+                    // Skip this function
+                }
+            })
         })
 
         return datasets
@@ -141,8 +143,8 @@ export default class FunctionPlot extends Component {
 
     render() {
         const curves = this.updateCurves(this.props.functions, this.props.vars, this.state.xRange)
-        const points = this.updatePoints(this.props.functions, this.props.vars)
-        const data = { datasets: curves.concat(points) }
+        const points = this.updatePoints(this.props.functions, this.props.vars, this.props.boundaries)
+        const data = { datasets: points.concat(curves) }
 
         return (
             <Scatter

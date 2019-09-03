@@ -1,3 +1,4 @@
+import Matter from 'matter-js'
 import React, { Component } from 'react'
 
 import evaluatex from 'evaluatex/dist/evaluatex';
@@ -35,6 +36,8 @@ const colors = [
 	"#001f3f",
 ]
 
+const A_VERY_BIG_NUMBER = 100000
+
 export default class UtilSim extends Component {
 	//static whyDidYouRender = true
 	constructor(props) {
@@ -53,9 +56,30 @@ export default class UtilSim extends Component {
 			snapToGrid: false,
 
 			objects: {},
-			boundaries: [],
 
-			vars: vars,
+			boundaries: [
+				{
+					bounds: { min: {x: 0, y: -A_VERY_BIG_NUMBER}, max: {x: A_VERY_BIG_NUMBER, y: 0} },
+					color: "#AA0000",
+					vars: {}
+				},
+				{
+					bounds: { min: {x: 0, y: 0}, max: {x: A_VERY_BIG_NUMBER, y: A_VERY_BIG_NUMBER} },
+					color: "#00AA00",
+					vars: {}
+				},
+				{
+					bounds: { min: {x: -A_VERY_BIG_NUMBER, y: -0}, max: {x: 0, y: A_VERY_BIG_NUMBER} },
+					color: "#0000AA",
+					vars: {}
+				},
+				{
+					bounds: { min: {x: -A_VERY_BIG_NUMBER, y: -A_VERY_BIG_NUMBER}, max: {x: 0, y: 0} },
+					color: "#AAAAAA",
+					vars: {}
+				}
+			],
+
 			utilFunctions: [
 				{
 					expression: "x^2",
@@ -100,22 +124,41 @@ export default class UtilSim extends Component {
 	}
 
 	onAfterUpdate = event => {
-		const numObjects = event.source.world.bodies.length
-		var numActive = numObjects
+		// Update vars for each boundary
+		const boundaries = this.state.boundaries.slice()
 
-		event.source.world.bodies.forEach(body => {
-			//objects[body.id] = { x: body.position.x, y: body.position.y }
-			if (body.isSleeping)
-				numActive--
+		const allBodies = Matter.Composite.allBodies(event.source.world)
+		const totalObjects = allBodies.length
+
+		boundaries.forEach(b => {
+			const bodies = []
+
+			for (var i = 0; i < allBodies.length;) {
+				const body = allBodies[i]
+				if (Util.pointInBounds(body.position, b.bounds, true)) {
+					bodies.push(body)
+					allBodies.splice(i, 1)
+					body.render.fillStyle = b.color
+				} else ++i
+			}
+
+			const numObjects = bodies.length
+
+			var numActive = numObjects
+			bodies.forEach(body => {
+				//objects[body.id] = { x: body.position.x, y: body.position.y }
+				if (body.isSleeping)
+					numActive--
+			})
+
+			b.vars.CPU_l = 0
+			b.vars.O_a = numObjects ? numActive / numObjects : 0
+			b.vars.O_b = 0
+			b.vars.O_t = numObjects
+			b.vars.T_m = 0
 		})
 
-		var vars = Object.assign({}, this.state.vars)
-
-		// Update vars
-		vars.O_t.value = numObjects
-		vars.O_a.value = numObjects ? numActive / numObjects : 0
-
-		this.setState({ vars })
+		this.setState({ boundaries })
 
 		// this.setState(prevState => {
 		// 	return {
@@ -160,7 +203,8 @@ export default class UtilSim extends Component {
 		var boundaries = this.state.boundaries.slice()
 		boundaries.push({
 			bounds: bounds,
-			color: colors[boundaries.length % colors.length]
+			color: colors[boundaries.length % colors.length],
+			vars: {}
 		})
 		this.setState({ boundaries })
 	}
@@ -168,7 +212,7 @@ export default class UtilSim extends Component {
 	onBoundaryDeleted = index => {
 		var boundaries = this.state.boundaries.slice()
 		boundaries.splice(index, 1)
-		this.setState({boundaries})
+		this.setState({ boundaries })
 	}
 
 	onBoundaryUpdated = (index, bounds) => {
@@ -182,7 +226,7 @@ export default class UtilSim extends Component {
 		oldBounds.min.y = bounds.min.y
 		oldBounds.max.x = bounds.max.x
 		oldBounds.max.y = bounds.max.y
-		this.setState({boundaries})
+		this.setState({ boundaries })
 	}
 
 	onUtilFunctionInputChanged = event => {
@@ -321,8 +365,9 @@ export default class UtilSim extends Component {
 						</Col>
 						<Col>
 							<FunctionPlot
+								boundaries={this.state.boundaries}
 								functions={this.state.utilFunctions}
-								vars={this.state.vars}
+								vars={vars}
 							/>
 						</Col>
 						<Col>
@@ -330,8 +375,8 @@ export default class UtilSim extends Component {
 								// Physics state
 								boundaries={this.state.boundaries}
 								objects={this.state.objects}
-								vars={this.state.vars}
 								utilFunctions={this.state.utilFunctions}
+								vars={vars}
 
 								// Control panel callbacks
 								onUtilFunctionInputChanged={this.onUtilFunctionInputChanged}
