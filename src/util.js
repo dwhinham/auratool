@@ -23,3 +23,13 @@ Util.pointInBounds = (p, b, includeEdges = true) => {
     else
         return p.x > b.min.x && p.x < b.max.x && p.y > b.min.y && p.y < b.max.y
 }
+
+Util.objectNearBoundary = (object, bounds) => {
+    const centre = object.position
+    const radius = object.circleRadius
+
+    return  centre.x - radius < bounds.min.x ||
+            centre.x + radius > bounds.max.x ||
+            centre.y - radius < bounds.min.y ||
+            centre.y + radius > bounds.max.y
+}

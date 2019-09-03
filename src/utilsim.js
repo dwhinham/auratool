@@ -132,14 +132,24 @@ export default class UtilSim extends Component {
 
 		boundaries.forEach(b => {
 			const bodies = []
+			var numNearBoundary = 0
 
 			for (var i = 0; i < allBodies.length;) {
 				const body = allBodies[i]
 				if (Util.pointInBounds(body.position, b.bounds, true)) {
+					// Is the object near any of the boundary edges?
+					if (Util.objectNearBoundary(body, b.bounds))
+						++numNearBoundary
+
+					// Make object same colour as boundary that contains it
+					body.render.fillStyle = b.color
+
+					// Add to this boundary's objects array, remove from 'all objects array'
 					bodies.push(body)
 					allBodies.splice(i, 1)
-					body.render.fillStyle = b.color
-				} else ++i
+				} else {
+					++i
+				}
 			}
 
 			const numObjects = bodies.length
@@ -153,7 +163,7 @@ export default class UtilSim extends Component {
 
 			b.vars.CPU_l = 0
 			b.vars.O_a = numObjects ? numActive / numObjects : 0
-			b.vars.O_b = 0
+			b.vars.O_b = numObjects ? numNearBoundary / numObjects : 0 
 			b.vars.O_t = numObjects
 			b.vars.T_m = 0
 		})
