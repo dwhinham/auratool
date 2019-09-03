@@ -45,7 +45,7 @@ export default function ControlPanel(props) {
 											func.expression && 
 											<InputGroup.Prepend>
 												<InputGroup.Text>
-													<MathJax.Node inline>{func.expression}</MathJax.Node>
+													<MathJax.Node inline>{`U(${func.utilVar})=${func.expression}`}</MathJax.Node>
 												</InputGroup.Text>
 											</InputGroup.Prepend>
 										}
@@ -59,19 +59,19 @@ export default function ControlPanel(props) {
 										<InputGroup.Append>
 											<Dropdown>
 												<Dropdown.Toggle variant="dark" style={{borderRadius: 0}}>
-													<MathJax.Node inline>{func.plotVar}</MathJax.Node>
+													<MathJax.Node inline>{func.utilVar}</MathJax.Node>
 												</Dropdown.Toggle>
 
 												<Dropdown.Menu>											
-													<Dropdown.Header>Plot variable</Dropdown.Header>
-													<Dropdown.Item onSelect={() => { props.onUtilFunctionPlotVarChanged(i, "x") }}>
+													<Dropdown.Header>Utility variable</Dropdown.Header>
+													<Dropdown.Item onSelect={() => { props.onUtilVarChanged(i, "x") }}>
 														<MathJax.Node inline>x</MathJax.Node>
 													</Dropdown.Item>
 													<Dropdown.Divider />
 													{
 														Object.keys(props.vars).map((key, j) => {
 															return (
-																<Dropdown.Item key={j} onSelect={() => { props.onUtilFunctionPlotVarChanged(i, key) }}>
+																<Dropdown.Item key={j} onSelect={() => { props.onUtilVarChanged(i, key) }}>
 																	<MathJax.Node>{key}</MathJax.Node>
 																</Dropdown.Item>
 															)

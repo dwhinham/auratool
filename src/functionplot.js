@@ -22,20 +22,6 @@ export default class FunctionPlot extends Component {
         }
     }
 
-    onRelayout = layout => {
-        if (layout.hasOwnProperty('dragmode')) {
-            this.setState({
-                dragmode: layout.dragmode
-            })
-        }
-        else if (layout.hasOwnProperty('xaxis.range[0]')) {
-            this.setState({
-                xRange: [layout['xaxis.range[0]'], layout['xaxis.range[1]']],
-                yRange: [layout['yaxis.range[0]'], layout['yaxis.range[1]']]
-            })
-        }
-    }
-
     // Memoized function returns cached results when arguments are the same as the last call
     updateCurves = memoize((funcs, vars, xRange) => {
         const numSteps = 100
@@ -52,7 +38,7 @@ export default class FunctionPlot extends Component {
                 return
 
             var dataset = {
-                label: func.expression,
+                label: `U(${func.utilVar})`,
                 fill: false,
                 showLine: true,
                 pointRadius: 0,
@@ -65,17 +51,17 @@ export default class FunctionPlot extends Component {
             try {
                 for (var x = this.state.xRange[0]; x <= this.state.xRange[1]; x += stepSize) {
                     // Don't pass in the emove the 
-                    const { [func.plotVar]: _, ...varsWithoutPlotVar } = evalVars
+                    const { [func.utilVar]: _, ...varsWithoutUtilVar } = evalVars
 
                     const y = func.evalFunc({
-                        [func.plotVar]: x,
+                        [func.utilVar]: x,
 
                         // Constants
                         e: Math.E,
                         pi: Math.PI,
 
                         // Variable values
-                        ...varsWithoutPlotVar
+                        ...varsWithoutUtilVar
                     })
 
                     dataset.data.push({x, y})
@@ -98,26 +84,26 @@ export default class FunctionPlot extends Component {
             Object.keys(b.vars).forEach(key => evalVars[key] = b.vars[key])
 
             funcs.forEach(func => {
-                if (!func.evalFunc || func.plotVar === 'x')
+                if (!func.evalFunc || func.utilVar === 'x')
                     return
 
                 try {
-                    const { [func.plotVar]: plotVar, ...varsWithoutPlotVar } = evalVars
+                    const { [func.utilVar]: utilVar, ...varsWithoutUtilVar } = evalVars
 
-                    const x = evalVars[func.plotVar]
+                    const x = evalVars[func.utilVar]
                     const y = func.evalFunc({
-                        [func.plotVar]: x,
+                        [func.utilVar]: x,
 
                         // Constants
                         e: Math.E,
                         pi: Math.PI,
 
                         // Variable values
-                        ...varsWithoutPlotVar
+                        ...varsWithoutUtilVar
                     })
 
                     datasets.push({
-                        label: `B${i} ${func.plotVar}`,
+                        label: `B${i} U(${func.utilVar})`,
                         fill: true,
                         showLine: false,
                         pointRadius: 6,
@@ -137,10 +123,6 @@ export default class FunctionPlot extends Component {
         return datasets
     })
 
-    onRangeSliderChanged = value => {
-        this.setState({x: value.x})
-    }
-
     render() {
         const curves = this.updateCurves(this.props.functions, this.props.vars, this.state.xRange)
         const points = this.updatePoints(this.props.functions, this.props.vars, this.props.boundaries)
@@ -148,7 +130,7 @@ export default class FunctionPlot extends Component {
 
         return (
             <Scatter
-                data = { data }
+                data={ data }
                 width={ this.state.width }
                 height={ this.state.height }
                 options={{ maintainAspectRatio: false }}

@@ -83,17 +83,17 @@ export default class UtilSim extends Component {
 			utilFunctions: [
 				{
 					expression: "x^2",
-					plotVar: "x",
+					utilVar: "x",
 					color: colors[0]
 				},
 				{
 					expression: "e^(-10O_a)",
-					plotVar: "O_a",
+					utilVar: "O_a",
 					color: colors[1]
 				},
 				{
 					expression: "O_b",
-					plotVar: "O_b",
+					utilVar: "O_b",
 					color: colors[2]
 				}
 			]
@@ -246,9 +246,9 @@ export default class UtilSim extends Component {
 		this.setState({ utilFunctions })
 	}
 
-	onUtilFunctionPlotVarChanged = (index, plotVar) => {
+	onUtilVarChanged = (index, utilVar) => {
 		let utilFunctions = this.state.utilFunctions.slice()
-		utilFunctions[index].plotVar = plotVar
+		utilFunctions[index].utilVar = utilVar
 		this.setState({ utilFunctions })
 	}
 
@@ -256,7 +256,7 @@ export default class UtilSim extends Component {
 		let utilFunctions = this.state.utilFunctions.slice()
 		utilFunctions.push({
 			expression: "",
-			plotVar: "x",
+			utilVar: "x",
 			color: colors[utilFunctions.length % colors.length]
 		})
 		this.setState({ utilFunctions })
@@ -380,9 +380,9 @@ export default class UtilSim extends Component {
 
 								// Control panel callbacks
 								onUtilFunctionInputChanged={this.onUtilFunctionInputChanged}
-								onUtilFunctionPlotVarChanged={this.onUtilFunctionPlotVarChanged}
 								onUtilFunctionAdded={this.onUtilFunctionAdded}
 								onUtilFunctionDeleted={this.onUtilFunctionDeleted}
+								onUtilVarChanged={this.onUtilVarChanged}
 								onRandomPressed={this.onRandomPressed}
 								onClearPressed={this.onClearPressed}
 								onChangeColorClicked={this.onChangeColorClicked}
