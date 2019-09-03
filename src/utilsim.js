@@ -268,27 +268,27 @@ export default class UtilSim extends Component {
 								<Col>
 									<ButtonToolbar className="mb-2">
 										<ButtonGroup className="mr-2">
-											<Button size="sm" variant="secondary" onClick={this.onHomeClicked}><FontAwesomeIcon icon="home"></FontAwesomeIcon></Button>
+											<Button size="sm" variant="secondary" title="Show all objects" onClick={this.onHomeClicked}><FontAwesomeIcon icon="home"></FontAwesomeIcon></Button>
 										</ButtonGroup>
 										<ButtonGroup className="mr-2">
-											<Button size="sm" variant="secondary" active={this.state.mouseMode === MouseMode.OBJECT} onClick={() => { this.setState({mouseMode: MouseMode.OBJECT })}}>
+											<Button size="sm" variant="secondary" title="Object mode" active={this.state.mouseMode === MouseMode.OBJECT} onClick={() => { this.setState({mouseMode: MouseMode.OBJECT })}}>
 												<FontAwesomeIcon icon="cube"></FontAwesomeIcon>
 											</Button>
-											<Button size="sm" variant="secondary" active={this.state.mouseMode === MouseMode.BOUNDARY_EDIT} onClick={() => { this.setState({mouseMode: MouseMode.BOUNDARY_EDIT })}}>
+											<Button size="sm" variant="secondary" title="Boundary mode" active={this.state.mouseMode === MouseMode.BOUNDARY_EDIT} onClick={() => { this.setState({mouseMode: MouseMode.BOUNDARY_EDIT })}}>
 												<FontAwesomeIcon icon="vector-square"></FontAwesomeIcon>
 											</Button>
-											<Button size="sm" variant="secondary" active={this.state.mouseMode === MouseMode.SNOOKER} onClick={() => { this.setState({mouseMode: MouseMode.SNOOKER })}}>
+											<Button size="sm" variant="secondary" title="Snooker mode" active={this.state.mouseMode === MouseMode.SNOOKER} onClick={() => { this.setState({mouseMode: MouseMode.SNOOKER })}}>
 												<FontAwesomeIcon icon="bowling-ball"></FontAwesomeIcon>
 											</Button>
 										</ButtonGroup>
 										<ButtonGroup>
-											<Button size="sm" variant="secondary" active={this.state.snapToGrid} onClick={() => { this.setState({snapToGrid: !this.state.snapToGrid })}}>
+											<Button size="sm" variant="secondary" title="Toggle snap to grid" active={this.state.snapToGrid} onClick={() => { this.setState({snapToGrid: !this.state.snapToGrid })}}>
 												<FontAwesomeIcon icon="magnet"></FontAwesomeIcon>
 											</Button>
-											<Button size="sm" variant="secondary" onClick={() => { this.setState({gridSize: Math.max(25, this.state.gridSize / 2)}) }}>
+											<Button size="sm" variant="secondary" title="Decrease grid size" onClick={() => { this.setState({gridSize: Math.max(25, this.state.gridSize / 2)}) }}>
 												<FontAwesomeIcon icon="th"></FontAwesomeIcon>
 											</Button>
-											<Button size="sm" variant="secondary" onClick={() => { this.setState({gridSize: this.state.gridSize * 2}) }}>
+											<Button size="sm" variant="secondary" title="Increase grid size" onClick={() => { this.setState({gridSize: this.state.gridSize * 2}) }}>
 												<FontAwesomeIcon icon="th-large"></FontAwesomeIcon>
 											</Button>
 										</ButtonGroup>
