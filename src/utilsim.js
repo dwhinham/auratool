@@ -303,7 +303,7 @@ export default class UtilSim extends Component {
 	}
 
 	onHomeClicked = () => {
-		console.log("home")
+		this.serverRef.current.showAllObjects()
 	}
 
 	render() {

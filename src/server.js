@@ -578,6 +578,11 @@ export default class Server extends PureComponent {
 		Matter.World.add(this.matterEngine.world, this.matterMouseConstraint)
 	}
 
+	showAllObjects = () => {
+		const allBodies = Matter.Composite.allBodies(this.matterEngine.world)
+		RenderAuraProj.lookAt(this.matterRender, allBodies, {x: 50, y: 50}, true)
+	}
+
 	// Convert a position in world space to canvas space
 	worldToCanvas = position => {
 		const render = this.matterRender
