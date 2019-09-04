@@ -580,7 +580,16 @@ export default class Server extends PureComponent {
 
 	showAllObjects = () => {
 		const allBodies = Matter.Composite.allBodies(this.matterEngine.world)
+		if (allBodies.length)
 		RenderAuraProj.lookAt(this.matterRender, allBodies, {x: 50, y: 50}, true)
+	}
+
+	resetView = () => {
+		const canvas = this.canvasRef.current
+		this.matterRender.bounds.min.x = -canvas.width / 2
+		this.matterRender.bounds.min.y = -canvas.height / 2
+		this.matterRender.bounds.max.x = canvas.width / 2
+		this.matterRender.bounds.max.y = canvas.height / 2
 	}
 
 	// Convert a position in world space to canvas space

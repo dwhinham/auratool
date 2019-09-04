@@ -303,6 +303,10 @@ export default class UtilSim extends Component {
 	}
 
 	onHomeClicked = () => {
+		this.serverRef.current.resetView()
+	}
+
+	onShowAllObjectsClicked = () => {
 		this.serverRef.current.showAllObjects()
 	}
 
@@ -315,15 +319,12 @@ export default class UtilSim extends Component {
 					</Navbar.Brand>
 				</Navbar>
 
-				<Container fluid="true" className="mt-2">
+				<Container fluid={true} className="mt-2">
 					<Row>
 						<Col>
 							<Row>
 								<Col>
 									<ButtonToolbar className="mb-2">
-										<ButtonGroup className="mr-2">
-											<Button size="sm" variant="secondary" title="Show all objects" onClick={this.onHomeClicked}><FontAwesomeIcon icon="home"></FontAwesomeIcon></Button>
-										</ButtonGroup>
 										<ButtonGroup className="mr-2">
 											<Button size="sm" variant="secondary" title="Object mode" active={this.state.mouseMode === MouseMode.OBJECT} onClick={() => { this.setState({mouseMode: MouseMode.OBJECT })}}>
 												<FontAwesomeIcon icon="cube"></FontAwesomeIcon>
@@ -335,7 +336,11 @@ export default class UtilSim extends Component {
 												<FontAwesomeIcon icon="bowling-ball"></FontAwesomeIcon>
 											</Button>
 										</ButtonGroup>
-										<ButtonGroup>
+										<ButtonGroup className="mr-2">
+											<Button size="sm" variant="secondary" title="Reset view" onClick={this.onHomeClicked}><FontAwesomeIcon icon="home"></FontAwesomeIcon></Button>
+											<Button size="sm" variant="secondary" title="Show all objects" onClick={this.onShowAllObjectsClicked}><FontAwesomeIcon icon="eye"></FontAwesomeIcon></Button>
+										</ButtonGroup>
+										<ButtonGroup className="mr-2">
 											<Button size="sm" variant="secondary" title="Toggle snap to grid" active={this.state.snapToGrid} onClick={() => { this.setState({snapToGrid: !this.state.snapToGrid })}}>
 												<FontAwesomeIcon icon="magnet"></FontAwesomeIcon>
 											</Button>

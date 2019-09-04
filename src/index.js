@@ -12,12 +12,12 @@ import UtilSim from './utilsim'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import {
 	faBorderAll, faBowlingBall, faChartLine, faCube, faDice,
-	faHome, faMagnet, faPlus, faPalette, faRadiation,
+	faEye, faHome, faMagnet, faPlus, faPalette, faRadiation,
 	faTh, faThLarge, faTrash, faVectorSquare
 } from '@fortawesome/free-solid-svg-icons'
 library.add(
 	faBorderAll, faBowlingBall, faChartLine, faCube, faDice,
-	faHome, faMagnet, faPlus, faPalette, faRadiation,
+	faEye, faHome, faMagnet, faPlus, faPalette, faRadiation,
 	faTh, faThLarge, faTrash, faVectorSquare
 )
 
