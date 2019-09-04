@@ -53,7 +53,7 @@ export default function ControlPanel(props) {
 											data-index={i}
 											placeholder="Function (in ASCIImath)"
 											aria-label="Function (in ASCIImath)"
-											onChange={props.onUtilFunctionInputChanged}
+											onChange={props.onUtilFunctionInputUpdated}
 											value={func.expression}
 										/>
 										<InputGroup.Append>
@@ -64,14 +64,14 @@ export default function ControlPanel(props) {
 
 												<Dropdown.Menu>											
 													<Dropdown.Header>Utility variable</Dropdown.Header>
-													<Dropdown.Item onSelect={() => { props.onUtilVarChanged(i, "x") }}>
+													<Dropdown.Item onSelect={() => { props.onUtilVarUpdated(i, "x") }}>
 														<MathJax.Node inline>x</MathJax.Node>
 													</Dropdown.Item>
 													<Dropdown.Divider />
 													{
 														Object.keys(props.vars).map((key, j) => {
 															return (
-																<Dropdown.Item key={j} onSelect={() => { props.onUtilVarChanged(i, key) }}>
+																<Dropdown.Item key={j} onSelect={() => { props.onUtilVarUpdated(i, key) }}>
 																	<MathJax.Node>{key}</MathJax.Node>
 																</Dropdown.Item>
 															)
@@ -85,7 +85,7 @@ export default function ControlPanel(props) {
 												props.showColorPicker && parseInt(props.colorIndex) === i &&
 												<div style={ popover }>
 													<div style={ cover } onClick={ props.onChangeColorClicked }/>
-													<SketchPicker disableAlpha={true} color={func.color} onChange={props.onColorChanged} />
+													<SketchPicker disableAlpha={true} color={func.color} onChange={props.onColorUpdated} />
 												</div>
 											}
 
@@ -101,7 +101,7 @@ export default function ControlPanel(props) {
 				</div>
 				<Row className="mt-1">
 					<Col>
-						<Button variant="success" onClick={props.onUtilFunctionAdded}><FontAwesomeIcon icon="plus"/></Button>
+						<Button variant="success" onClick={props.onUtilFunctionAdded}><FontAwesomeIcon icon="plus"/>&nbsp;Add function</Button>
 					</Col>
 				</Row>
 			</Tab>
@@ -116,14 +116,7 @@ export default function ControlPanel(props) {
 				<ul>
 					{ Object.keys(props.objects).map((o, i) => <li key={i}>{`Object ${i}: id = ${o}, x = ${props.objects[o].x}, y = ${props.objects[o].y}`}</li> )}
 				</ul>
-			</Tab>
-
-			<Tab eventKey="simulation" title="Simulation">
-				<ButtonToolbar>
-					<Button className="mr-2" variant="warning" onClick={props.onRandomPressed}>Random</Button>
-					<Button className="mr-2" variant="danger" onClick={props.onClearPressed}>Clear</Button>
-				</ButtonToolbar>
-			</Tab>
+			</Tab> */}
 		</Tabs>
 	)
 }

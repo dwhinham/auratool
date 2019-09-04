@@ -239,7 +239,7 @@ export default class UtilSim extends Component {
 		this.setState({ boundaries })
 	}
 
-	onUtilFunctionInputChanged = event => {
+	onUtilFunctionInputUpdated = event => {
 		const index = event.currentTarget.dataset.index
 		const expression = event.currentTarget.value
 
@@ -256,7 +256,7 @@ export default class UtilSim extends Component {
 		this.setState({ utilFunctions })
 	}
 
-	onUtilVarChanged = (index, utilVar) => {
+	onUtilVarUpdated = (index, utilVar) => {
 		let utilFunctions = this.state.utilFunctions.slice()
 		utilFunctions[index].utilVar = utilVar
 		this.setState({ utilFunctions })
@@ -287,17 +287,17 @@ export default class UtilSim extends Component {
 		})
 	}
 
-	onColorChanged = color => {
+	onColorUpdated = color => {
 		let utilFunctions = this.state.utilFunctions.slice()
 		utilFunctions[this.state.colorIndex].color = color.hex
 		this.setState({ utilFunctions })
 	}
 
-	onRandomPressed = () => {
+	onRandomClicked = () => {
 		this.serverRef.current.spawnRandomObjects(100)
 	}
 
-	onClearPressed = () => {
+	onClearClicked = () => {
 		this.setState({ objects: {} })
 		this.serverRef.current.clearAllObjects()
 	}
@@ -346,6 +346,10 @@ export default class UtilSim extends Component {
 												<FontAwesomeIcon icon="th-large"></FontAwesomeIcon>
 											</Button>
 										</ButtonGroup>
+										<ButtonGroup className="mr-2">
+											<Button size="sm" variant="secondary" title="Spawn random objects" onClick={this.onRandomClicked}><FontAwesomeIcon icon="dice"></FontAwesomeIcon></Button>
+											<Button size="sm" variant="warning" title="Remove all objects" onClick={this.onClearClicked}><FontAwesomeIcon icon="radiation"></FontAwesomeIcon></Button>
+										</ButtonGroup>
 									</ButtonToolbar>
 								</Col>
 							</Row>
@@ -389,14 +393,12 @@ export default class UtilSim extends Component {
 								vars={vars}
 
 								// Control panel callbacks
-								onUtilFunctionInputChanged={this.onUtilFunctionInputChanged}
+								onUtilFunctionInputUpdated={this.onUtilFunctionInputUpdated}
 								onUtilFunctionAdded={this.onUtilFunctionAdded}
 								onUtilFunctionDeleted={this.onUtilFunctionDeleted}
-								onUtilVarChanged={this.onUtilVarChanged}
-								onRandomPressed={this.onRandomPressed}
-								onClearPressed={this.onClearPressed}
+								onUtilVarUpdated={this.onUtilVarUpdated}
 								onChangeColorClicked={this.onChangeColorClicked}
-								onColorChanged={this.onColorChanged}
+								onColorUpdated={this.onColorUpdated}
 								showColorPicker={this.state.showColorPicker}
 								colorIndex={this.state.colorIndex}
 							/>
