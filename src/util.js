@@ -33,3 +33,35 @@ Util.objectNearBoundary = (object, bounds) => {
             centre.y - radius < bounds.min.y ||
             centre.y + radius > bounds.max.y
 }
+
+Util.evaluateUtilFunction = (func, boundary, constants, globalVars) => {
+    try {
+        return func.evalFunc({
+            [func.utilVar]: boundary.vars[func.utilVar],
+    
+            // Non-boundary variables
+            ...constants,
+            ...globalVars
+        })
+    } catch {
+        return 0
+    }
+}
+
+Util.evaluateServerUtilFunction = (serverUtilFunc, utilFuncs, boundary, constants, globalVars) => {
+    if (!serverUtilFunc.evalFunc)
+        return 0
+
+    const utilValues = {...boundary.vars, ...constants, ...globalVars}
+    utilFuncs.forEach(func => {
+        if (!func.evalFunc || func.utilVar === 'x')
+            return
+        utilValues[`U_${func.utilVar}`] = Util.evaluateUtilFunction(func, boundary, constants, globalVars)
+    })
+
+    try {
+        return serverUtilFunc.evalFunc(utilValues)
+    } catch(e) {
+        return 0
+    }
+}

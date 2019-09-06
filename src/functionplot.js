@@ -3,6 +3,8 @@ import React, { Component } from 'react'
 
 import memoize from 'memoize-one'
 
+import Util from './util'
+
 export default class FunctionPlot extends Component {
     constructor(props) {
         super(props)
@@ -23,13 +25,9 @@ export default class FunctionPlot extends Component {
     }
 
     // Memoized function returns cached results when arguments are the same as the last call
-    updateCurves = memoize((funcs, vars, xRange) => {
+    updateCurves = memoize((funcs, constants, globalVars) => {
         const numSteps = 100
-        const stepSize = (xRange[1] - xRange[0]) / numSteps
-
-        // Coerce the variables array into the right format for evaluatex
-        var evalVars = {}
-        Object.keys(vars).forEach(key => evalVars[key] = vars[key].value)
+        const stepSize = (this.state.xRange[1] - this.state.xRange[0]) / numSteps
 
         // Plot curves
         var datasets = []
@@ -50,18 +48,12 @@ export default class FunctionPlot extends Component {
 
             try {
                 for (var x = this.state.xRange[0]; x <= this.state.xRange[1]; x += stepSize) {
-                    // Don't pass in the emove the 
-                    const { [func.utilVar]: _, ...varsWithoutUtilVar } = evalVars
-
                     const y = func.evalFunc({
                         [func.utilVar]: x,
 
-                        // Constants
-                        e: Math.E,
-                        pi: Math.PI,
-
-                        // Variable values
-                        ...varsWithoutUtilVar
+                        // Non-boundary variables
+                        ...constants,
+                        ...globalVars
                     })
 
                     dataset.data.push({x, y})
@@ -75,32 +67,17 @@ export default class FunctionPlot extends Component {
         return datasets
     })
 
-    updatePoints = memoize((funcs, vars, boundaries) => {
+    updatePoints = memoize((boundaries, funcs, constants, globalVars) => {
         var datasets = []
-
-        boundaries.forEach((b, i) => {
-            // Coerce the variables array into the right format for evaluatex
-            var evalVars = {}
-            Object.keys(b.vars).forEach(key => evalVars[key] = b.vars[key])
 
             funcs.forEach(func => {
                 if (!func.evalFunc || func.utilVar === 'x')
                     return
 
                 try {
-                    const { [func.utilVar]: utilVar, ...varsWithoutUtilVar } = evalVars
-
-                    const x = evalVars[func.utilVar]
-                    const y = func.evalFunc({
-                        [func.utilVar]: x,
-
-                        // Constants
-                        e: Math.E,
-                        pi: Math.PI,
-
-                        // Variable values
-                        ...varsWithoutUtilVar
-                    })
+                boundaries.forEach((b, i) => {
+                    const x = b.vars[func.utilVar]
+                    const y = Util.evaluateUtilFunction(func, b, constants, globalVars)
 
                     datasets.push({
                         label: `B${i} U(${func.utilVar})`,
@@ -114,18 +91,18 @@ export default class FunctionPlot extends Component {
                         borderColor: func.color,
                         data: [{x, y}]
                     })
+                })
                 } catch(e) {
                     // Skip this function
                 }
             })
-        })
 
         return datasets
     })
 
     render() {
-        const curves = this.updateCurves(this.props.functions, this.props.vars, this.state.xRange)
-        const points = this.updatePoints(this.props.functions, this.props.vars, this.props.boundaries)
+        const curves = this.updateCurves(this.props.utilFunctions, this.props.utilConstants, this.props.utilGlobalVars)
+        const points = this.updatePoints(this.props.boundaries, this.props.utilFunctions, this.props.utilConstants, this.props.utilGlobalVars)
         const data = { datasets: points.concat(curves) }
 
         return (

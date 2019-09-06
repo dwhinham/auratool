@@ -118,20 +118,24 @@ export default class Server extends PureComponent {
 		const body = Matter.Bodies.circle(0, 300, 50, { restitution: 0.5 })
 		Matter.World.add(this.matterEngine.world, body)	
 
+		// Create runner
+		this.matterRunner = Matter.Runner.create({isFixed:false, deltaSampleSize: 5})
+
 		// Mouse handlers
 		Matter.Events.on(this.matterMouseConstraint, 'startdrag', this.onBodyDragStart)
 		Matter.Events.on(this.matterMouseConstraint, 'enddrag', this.onBodyDragEnd)
 
-		// Engine hooks
+		// Engine/runner hooks
 		Matter.Events.on(this.matterEngine, 'beforeUpdate', this.onBeforeUpdate)
-		Matter.Events.on(this.matterEngine, 'afterUpdate', this.props.onAfterUpdate)
+		Matter.Events.on(this.matterEngine, 'beforeUpdate', this.props.onEngineBeforeUpdate)
+		Matter.Events.on(this.matterEngine, 'afterUpdate', this.props.onEngineAfterUpdate)
 
 		// Renderer hooks
 		Matter.Events.on(this.matterRender, 'beforeRender', this.onBeforeRender)
 		Matter.Events.on(this.matterRender, 'beforeObjects', this.onBeforeObjects)
 
 		// Run the engine
-		Matter.Engine.run(this.matterEngine)
+		Matter.Engine.run(this.matterRunner, this.matterEngine)
 
 		// Run the renderer
 		RenderAuraProj.run(this.matterRender)
@@ -357,9 +361,10 @@ export default class Server extends PureComponent {
 
 				// Left-click: add new object
 				if (event.button === 0) {
-					const body = Matter.Bodies.circle(mousePos.x, mousePos.y, 10, { restitution: 0.5 })
+					const body = Matter.Bodies.circle(mousePos.x, mousePos.y, 20, { restitution: 0.5 })
 				
 					Matter.World.add(this.matterEngine.world, body)
+					if (this.props.onObjectAdded)
 					this.props.onObjectAdded(body)
 				}
 
@@ -367,6 +372,7 @@ export default class Server extends PureComponent {
 				else if (event.button === 2) {
 					const body = this.bodyAtPosition(mousePos)
 					if (body) {
+						if (this.props.onObjectDeleted)
 						this.props.onObjectDeleted(body.id)
 						Matter.Composite.remove(this.matterEngine.world, body)
 					}
@@ -630,8 +636,6 @@ export default class Server extends PureComponent {
 
 		return canvas ? this.worldToCanvas(mousePos) : mousePos
 	}
-
-
 
 	render() {
 		return (

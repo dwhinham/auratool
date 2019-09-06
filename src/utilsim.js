@@ -6,6 +6,7 @@ import FunctionPlot from './functionplot'
 import ControlPanel from './controlpanel'
 import Server, { MouseMode } from './server'
 import Util from './util'
+import { cloneDeep } from 'lodash'
 
 import Button from 'react-bootstrap/Button'
 import ButtonToolbar from 'react-bootstrap/ButtonToolbar'
@@ -14,26 +15,32 @@ import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
 import Navbar from 'react-bootstrap/Navbar';
 import Row from 'react-bootstrap/Row';
-import { vars } from './variables'
+import { constants } from './variables'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 const colors = [
-	"#0074D9",
-	"#7FDBFF",
-	"#39CCCC",
-	"#3D9970",
-	"#2ECC40",
-	"#01FF70",
-	"#FFDC00",
-	"#FF851B",
-	"#FF4136",
-	"#85144b",
-	"#F012BE",
-	"#B10DC9",
-	"#111111",
-	"#AAAAAA",
-	"#DDDDDD",
-	"#001f3f",
+	'#e6194b',
+	'#3cb44b',
+	'#4363d8',
+	'#f58231',
+	'#911eb4',
+	'#46f0f0',
+	'#f032e6',
+	'#bcf60c',
+	'#fabebe',
+	'#008080',
+	'#e6beff',
+	'#9a6324',
+	'#fffac8',
+	'#800000',
+	'#aaffc3',
+	'#808000',
+	'#ffd8b1',
+	'#000075',
+	'#808080',
+	'#ffe119',
+	'#ffffff',
+	'#000000'
 ]
 
 const A_VERY_BIG_NUMBER = 100000
@@ -45,98 +52,113 @@ export default class UtilSim extends Component {
 
 		this.serverRef = React.createRef()
 
+		const defaultConstantValues = {}
+		Object.keys(constants).forEach(key => defaultConstantValues[key] = constants[key].defaultValue)
+
+		this.frameTimeHistory = new Array(10)
+
 		this.state = {
 			x: 0,
 			y: 0,
 			showColorPicker: false,
 			colorIndex: 0,
+			lastBoundaryMoveTime: window.performance.now(),
 
 			mouseMode: MouseMode.OBJECT,
 			gridSize: 50,
 			snapToGrid: false,
 
-			objects: {},
-
 			boundaries: [
 				{
 					bounds: { min: {x: 0, y: -A_VERY_BIG_NUMBER}, max: {x: A_VERY_BIG_NUMBER, y: 0} },
-					color: "#AA0000",
+					color: colors[0],
 					vars: {}
 				},
 				{
 					bounds: { min: {x: 0, y: 0}, max: {x: A_VERY_BIG_NUMBER, y: A_VERY_BIG_NUMBER} },
-					color: "#00AA00",
+					color: colors[1],
 					vars: {}
 				},
 				{
 					bounds: { min: {x: -A_VERY_BIG_NUMBER, y: -0}, max: {x: 0, y: A_VERY_BIG_NUMBER} },
-					color: "#0000AA",
+					color: colors[2],
 					vars: {}
 				},
 				{
 					bounds: { min: {x: -A_VERY_BIG_NUMBER, y: -A_VERY_BIG_NUMBER}, max: {x: 0, y: 0} },
-					color: "#AAAAAA",
+					color: colors[3],
 					vars: {}
 				}
 			],
 
 			utilFunctions: [
 				{
-					expression: "x^2",
-					utilVar: "x",
-					color: colors[0]
+					expression: "e^(-10alpha)",
+					utilVar: "alpha",
+					color: colors[5]
 				},
 				{
-					expression: "e^(-10O_a)",
-					utilVar: "O_a",
-					color: colors[1]
+					expression: "e^(-5beta)",
+					utilVar: "beta",
+					color: colors[6]
 				},
 				{
-					expression: "O_b",
-					utilVar: "O_b",
-					color: colors[2]
+					expression: "min(max(0, -log(delta, 1000/60)), 1)",
+					utilVar: "delta",
+					color: colors[7]
 				}
-			]
+			],
+			utilConstants: defaultConstantValues,
+			utilGlobalVars: {},
+			utilServer: {
+				expression: "U_alpha + U_beta + U_delta"
+			}
 		}
+	}
 
-		this.state.utilFunctions.forEach(func => {
-			// Try to compile the function
-			try {
-				func.evalFunc = evaluatex(func.expression)
-			} catch {
-				func.evalFunc = null
+	componentDidMount = () => {
+		// Try to compile the functions
+		this.state.utilFunctions.forEach((func, i) => this.onUtilFunctionUpdated(i, func.expression))
+		this.onServerUtilFunctionUpdated(this.state.utilServer.expression)
 			}
-		})
+
+	onEngineBeforeUpdate = event => {
+		this.lastFrameTime = window.performance.now()
 	}
 
-	onObjectAdded = body => {
-		this.setState({
-			objects: {
-				...this.state.objects,
-				[body.id]: { x: body.x, y: body.y }
-			}
-		})
-	}
+	onEngineAfterUpdate = event => {
+		// Update timing metrics
+		const now = window.performance.now()
+		const delta = (now - this.lastFrameTime)
+		this.frameTimeHistory.push(delta)
+		this.frameTimeHistory.shift()
+		const avgFrameTime = this.frameTimeHistory.reduce((a, b) => a + b) / this.frameTimeHistory.length
 
-	onObjectDeleted = id => {
-		const {[id]: key, ...objects} = this.state.objects
-		this.setState({ objects })
-	}
-
-	onAfterUpdate = event => {
-		// Update vars for each boundary
 		const boundaries = this.state.boundaries.slice()
-
 		const allBodies = Matter.Composite.allBodies(event.source.world)
 		const totalObjects = allBodies.length
 
+		// Update boundary-local vars
 		boundaries.forEach(b => {
-			const bodies = []
+			var numObjects = 0
 			var numNearBoundary = 0
+			var numActive = 0
 
-			for (var i = 0; i < allBodies.length;) {
+			var i = 0
+			while (i < allBodies.length) {
 				const body = allBodies[i]
-				if (Util.pointInBounds(body.position, b.bounds, true)) {
+				if (!Util.pointInBounds(body.position, b.bounds, true)) {
+					++i
+					continue
+				}
+
+				// Update counters
+				++numObjects
+
+				// Is it active?
+				if (!body.isSleeping)
+					++numActive
+
 					// Is the object near any of the boundary edges?
 					if (Util.objectNearBoundary(body, b.bounds))
 						++numNearBoundary
@@ -144,49 +166,30 @@ export default class UtilSim extends Component {
 					// Make object same colour as boundary that contains it
 					body.render.fillStyle = b.color
 
-					// Add to this boundary's objects array, remove from 'all objects array'
-					bodies.push(body)
+				// Remove from 'all objects array'
 					allBodies.splice(i, 1)
-				} else {
-					++i
-				}
 			}
 
-			const numObjects = bodies.length
-
-			var numActive = numObjects
-			bodies.forEach(body => {
-				//objects[body.id] = { x: body.position.x, y: body.position.y }
-				if (body.isSleeping)
-					numActive--
-			})
-
-			b.vars.CPU_l = 0
-			b.vars.O_a = numObjects ? numActive / numObjects : 0
-			b.vars.O_b = numObjects ? numNearBoundary / numObjects : 0 
-			b.vars.O_t = numObjects
-			b.vars.T_m = 0
+			// Fake CPU usage (we can't get real CPU usage in JS)
+			b.vars.lambda = (numObjects ? Math.min(1.0, numActive / totalObjects) : 0) + Math.random() * 0.1
+			b.vars.delta = avgFrameTime
+			b.vars.alpha = numObjects ? numActive / numObjects : 0
+			b.vars.beta = numObjects ? numNearBoundary / numObjects : 0 
+			b.vars.n = numObjects
 		})
 
-		this.setState({ boundaries })
+		// Color remaining bodies (not in any boundary, which is something that should never happen) black
+		allBodies.forEach(b => b.render.fillStyle = 'black')
 
-		// this.setState(prevState => {
-		// 	return {
-		// 		//objects: objects,
-		// 		vars: {
-		// 			...prevState.vars,
-		// 			O_t: {
-		// 				...prevState.vars.O_t,import evaluatex from 'evaluatex/dist/evaluatex';
-		// 				value: numObjects,
-		// 			},
-		// 			O_a: {
-		// 				...prevState.vars.O_a,
-		// 				value: numObjects ? numActive / numObjects : 0,
-		// 			},
+		// Update global vars
+		const timeSinceBoundaryMoved = (now - this.state.lastBoundaryMoveTime) / 1000
+		const utilGlobalVars = {
+			sigma: boundaries.length,
+			t: timeSinceBoundaryMoved,
+			N: totalObjects
+		}
 					
-		// 		}
-		// 	}
-		// })
+		this.setState({ boundaries, utilGlobalVars })
 	}
 	
 	// Validate the bounds
@@ -216,13 +219,13 @@ export default class UtilSim extends Component {
 			color: colors[boundaries.length % colors.length],
 			vars: {}
 		})
-		this.setState({ boundaries })
+		this.setState({ boundaries, lastBoundaryMoveTime: window.performance.now() })
 	}
 
 	onBoundaryDeleted = index => {
 		var boundaries = this.state.boundaries.slice()
 		boundaries.splice(index, 1)
-		this.setState({ boundaries })
+		this.setState({ boundaries, lastBoundaryMoveTime: window.performance.now() })
 	}
 
 	onBoundaryUpdated = (index, bounds) => {
@@ -236,11 +239,11 @@ export default class UtilSim extends Component {
 		oldBounds.min.y = bounds.min.y
 		oldBounds.max.x = bounds.max.x
 		oldBounds.max.y = bounds.max.y
-		this.setState({ boundaries })
+		this.setState({ boundaries, lastBoundaryMoveTime: window.performance.now() })
 	}
 
-	onUtilFunctionInputUpdated = (index, value) => {
-		let utilFunctions = this.state.utilFunctions.slice()
+	onUtilFunctionUpdated = (index, value) => {
+		const utilFunctions = this.state.utilFunctions.slice()
 		utilFunctions[index].expression = value
 
 		// Try to compile the function
@@ -251,6 +254,26 @@ export default class UtilSim extends Component {
 		}
 
 		this.setState({ utilFunctions })
+	}
+
+	onServerUtilFunctionUpdated = value => {
+		const utilServer = cloneDeep(this.state.utilServer)
+		utilServer.expression = value
+
+		// Try to compile the function
+		try {
+            utilServer.evalFunc = evaluatex(value, { e: Math.E, pi: Math.PI })
+		} catch {
+			utilServer.evalFunc = null
+		}
+
+		this.setState({ utilServer })
+	}
+
+	onUtilConstantUpdated = (key, value) => {
+		const utilConstants = cloneDeep(this.state.utilConstants)
+		utilConstants[key] = value
+		this.setState({ utilConstants })
 	}
 
 	onUtilVarUpdated = (index, utilVar) => {
@@ -293,7 +316,6 @@ export default class UtilSim extends Component {
 	}
 
 	onClearClicked = () => {
-		this.setState({ objects: {} })
 		this.serverRef.current.clearAllObjects()
 	}
 
@@ -370,9 +392,8 @@ export default class UtilSim extends Component {
 										onBoundaryUpdated={this.onBoundaryUpdated}
 										onBoundaryDeleted={this.onBoundaryDeleted}
 
-										onObjectAdded={this.onObjectAdded}
-										onObjectDeleted={this.onObjectDeleted}
-										onAfterUpdate={this.onAfterUpdate}
+										onEngineBeforeUpdate={this.onEngineBeforeUpdate}
+										onEngineAfterUpdate={this.onEngineAfterUpdate}
 									/>
 								</Col>
 							</Row>
@@ -380,22 +401,29 @@ export default class UtilSim extends Component {
 						<Col>
 							<FunctionPlot
 								boundaries={this.state.boundaries}
-								functions={this.state.utilFunctions}
-								vars={vars}
+								utilFunctions={this.state.utilFunctions}
+								utilConstants={this.state.utilConstants}
+								utilGlobalVars={this.state.utilGlobalVars}
 							/>
 						</Col>
 						<Col>
 							<ControlPanel
 								// Physics state
 								boundaries={this.state.boundaries}
-								objects={this.state.objects}
+								objects={this.serverRef.current ? this.serverRef.current.matterEngine.world.bodies : null}
+
+								// Utility state
 								utilFunctions={this.state.utilFunctions}
-								vars={vars}
+								utilConstants={this.state.utilConstants}
+								utilGlobalVars={this.state.utilGlobalVars}
+								utilServer={this.state.utilServer}
 
 								// Control panel callbacks
-								onUtilFunctionInputUpdated={this.onUtilFunctionInputUpdated}
+								onUtilFunctionUpdated={this.onUtilFunctionUpdated}
 								onUtilFunctionAdded={this.onUtilFunctionAdded}
 								onUtilFunctionDeleted={this.onUtilFunctionDeleted}
+								onServerUtilFunctionUpdated={this.onServerUtilFunctionUpdated}
+								onUtilConstantUpdated={this.onUtilConstantUpdated}
 								onUtilVarUpdated={this.onUtilVarUpdated}
 								onChangeColorClicked={this.onChangeColorClicked}
 								onColorUpdated={this.onColorUpdated}

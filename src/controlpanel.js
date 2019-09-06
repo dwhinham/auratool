@@ -5,16 +5,15 @@ import { SketchPicker } from 'react-color'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
 import Button from 'react-bootstrap/Button'
-import ButtonToolbar from 'react-bootstrap/ButtonToolbar'
-import Col from 'react-bootstrap/Col'
 import Dropdown from 'react-bootstrap/Dropdown'
 import FormControl from 'react-bootstrap/FormControl'
 import InputGroup from 'react-bootstrap/InputGroup'
-import Row from 'react-bootstrap/Row'
 import Tab from 'react-bootstrap/Tab'
 import Tabs from 'react-bootstrap/Tabs'
+import Table from 'react-bootstrap/Table'
+import Util from './util'
 
-import Variables from './variables'
+import { vars, Variables } from './variables'
 
 export default function ControlPanel(props) {
 	const popover = {
@@ -31,78 +30,107 @@ export default function ControlPanel(props) {
 		left: '0px',
 	}
 
+	const serverUtilValues = Object.keys(props.boundaries).map(i => 
+		Util.evaluateServerUtilFunction(props.utilServer, props.utilFunctions, props.boundaries[i], props.utilConstants, props.utilGlobalVars)
+	)
+	const globalUtilValue = serverUtilValues.length ? serverUtilValues.reduce((a, b) => a + b).toFixed(2) : 0
+
 	return (
 		<Tabs>
-			<Tab eventKey="functions" title="Functions">
-				<div>
-					<Variables boundaries={props.boundaries}/>
-					{props.utilFunctions.map((func, i) => {
-						return (
-							<Row key={i} className="mt-1">
-								<Col>
-									<InputGroup>
-										{
-											func.expression && 
-											<InputGroup.Prepend>
-												<InputGroup.Text>
-													<MathJax.Node inline>{`U(${func.utilVar})=${func.expression}`}</MathJax.Node>
-												</InputGroup.Text>
-											</InputGroup.Prepend>
-										}
-										<FormControl
-											placeholder="Function (in ASCIImath)"
-											aria-label="Function (in ASCIImath)"
-							onChange={ (e) => props.onUtilFunctionInputUpdated(i, e.currentTarget.value) }
-											value={func.expression}
-										/>
-										<InputGroup.Append>
-											<Dropdown>
-												<Dropdown.Toggle variant="dark" style={{borderRadius: 0}}>
-													<MathJax.Node inline>{func.utilVar}</MathJax.Node>
-												</Dropdown.Toggle>
+			<Tab eventKey="variables" title="Variables">
+				<Variables boundaries={props.boundaries} utilConstants={props.utilConstants} utilGlobalVars={props.utilGlobalVars} onUtilConstantUpdated={props.onUtilConstantUpdated} />
+			</Tab>
 
-												<Dropdown.Menu>											
-													<Dropdown.Header>Utility variable</Dropdown.Header>
-													<Dropdown.Item onSelect={() => { props.onUtilVarUpdated(i, "x") }}>
-														<MathJax.Node inline>x</MathJax.Node>
-													</Dropdown.Item>
-													<Dropdown.Divider />
-													{
-														Object.keys(props.vars).map((key, j) => {
-															return (
-																<Dropdown.Item key={j} onSelect={() => { props.onUtilVarUpdated(i, key) }}>
-																	<MathJax.Node>{key}</MathJax.Node>
-																</Dropdown.Item>
-															)
-														})
-													}
-												</Dropdown.Menu>	
-											</Dropdown>
+			<Tab eventKey="functions" title="Functions">
+				<h5>Utility functions</h5>
+				{ props.utilFunctions.map((func, i) =>
+					<InputGroup className="mb-1" key={i}>
+						<InputGroup.Prepend>
+							<InputGroup.Text>
+								<MathJax.Node inline>{`U_${func.utilVar}=${func.expression}`}</MathJax.Node>
+							</InputGroup.Text>
+						</InputGroup.Prepend>
+
+						<FormControl
+							placeholder="Function (in ASCIImath)"
+							aria-label="Function (in ASCIImath)"
+							onChange={ (e) => props.onUtilFunctionUpdated(i, e.currentTarget.value) }
+							value={func.expression}
+						/>
+						<InputGroup.Append>
+							<Dropdown>
+								<Dropdown.Toggle variant="dark" style={{borderRadius: 0}}>
+									<MathJax.Node inline>{func.utilVar}</MathJax.Node>
+								</Dropdown.Toggle>
+
+								<Dropdown.Menu>											
+									<Dropdown.Header>Utility variable</Dropdown.Header>
+									<Dropdown.Item onSelect={() => { props.onUtilVarUpdated(i, "x") }}>
+										<MathJax.Node inline>x</MathJax.Node>
+									</Dropdown.Item>
+									<Dropdown.Divider />
+									{
+										Object.keys(vars).map((key, j) =>
+											<Dropdown.Item key={j} onSelect={() => { props.onUtilVarUpdated(i, key) }}>
+												<MathJax.Node>{key}</MathJax.Node>
+											</Dropdown.Item>
+										)
+									}
+								</Dropdown.Menu>	
+							</Dropdown>
 
 							<Button onClick={ () => props.onChangeColorClicked(i) } style={{backgroundColor: func.color}}><FontAwesomeIcon icon="palette"/></Button>
-											{
+							{
 								props.showColorPicker && props.colorIndex === i &&
-												<div style={ popover }>
-													<div style={ cover } onClick={ props.onChangeColorClicked }/>
-													<SketchPicker disableAlpha={true} color={func.color} onChange={props.onColorUpdated} />
-												</div>
-											}
+								<div style={ popover }>
+									<div style={ cover } onClick={ props.onChangeColorClicked }/>
+									<SketchPicker disableAlpha={true} color={func.color} onChange={props.onColorUpdated} />
+								</div>
+							}
 
 							<Button variant="danger" onClick={ () => props.onUtilFunctionDeleted(i) }>
-												<FontAwesomeIcon icon="trash"/>
-											</Button>
-										</InputGroup.Append>
-									</InputGroup>
-								</Col>
-							</Row>
-						)
-					})}
-				</div>
-				<Row className="mt-1">
-					<Col>
-						<Button variant="success" onClick={props.onUtilFunctionAdded}><FontAwesomeIcon icon="plus"/>&nbsp;Add function</Button>
-					</Col>
-				</Row>
+								<FontAwesomeIcon icon="trash"/>
+							</Button>
+						</InputGroup.Append>
+					</InputGroup>
+				) }
+				<Button className="mb-2" variant="success" onClick={props.onUtilFunctionAdded}><FontAwesomeIcon icon="plus"/>&nbsp;Add function</Button>
+
+				<h5>Local utility</h5>
+				<InputGroup className="mb-1">
+					<InputGroup.Prepend>
+						<InputGroup.Text>
+							<MathJax.Node inline>{`U_i=${props.utilServer.expression}`}</MathJax.Node>
+						</InputGroup.Text>
+					</InputGroup.Prepend>
+
+					<FormControl
+						placeholder="Function (in ASCIImath)"
+						aria-label="Function (in ASCIImath)"
+						onChange={ (e) => props.onServerUtilFunctionUpdated(e.currentTarget.value) }
+						value={props.utilServer.expression}
+					/>
+				</InputGroup>
+				<Table hover striped size="sm">
+					<thead>
+						<tr>
+							<th>Server</th>
+							<th><MathJax.Node>U_i</MathJax.Node></th>
+						</tr>
+					</thead>
+					<tbody>
+					{ Object.keys(props.boundaries).map(i =>
+						<tr key={i}>
+							<td>{i}</td>
+							<td><MathJax.Node>{ serverUtilValues[i].toFixed(2) }</MathJax.Node></td>
+						</tr>
+					) }
+					</tbody>
+				</Table>
+
+				<h5>Global utility</h5>
+				<MathJax.Node>U_g = U_0 + U_1 + ... + U_n</MathJax.Node>
+				= {globalUtilValue}
 			</Tab>
 
 			<Tab eventKey="boundaries" title="Boundaries">
@@ -133,12 +161,6 @@ export default function ControlPanel(props) {
 					</tbody>
 				</Table>
 			</Tab>
-
-			<Tab eventKey="objects" title="Objects">
-				<ul>
-					{ Object.keys(props.objects).map((o, i) => <li key={i}>{`Object ${i}: id = ${o}, x = ${props.objects[o].x}, y = ${props.objects[o].y}`}</li> )}
-				</ul>
-			</Tab> */}
 		</Tabs>
 	)
 }
