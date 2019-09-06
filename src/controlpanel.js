@@ -106,9 +106,32 @@ export default function ControlPanel(props) {
 			</Tab>
 
 			<Tab eventKey="boundaries" title="Boundaries">
-				<ul>
-					{ props.boundaries.map((b, i) => <li key={i}>{`Boundary ${i}: {${b.bounds.min.x}, ${b.bounds.min.y}} => {${b.bounds.max.x}, ${b.bounds.max.y}}`}</li> )}
-				</ul>
+				<Table hover striped size="sm">
+					<thead>
+						<tr>
+							<td>Server</td>
+							<td><MathJax.Node>x_1</MathJax.Node></td>
+							<td><MathJax.Node>y_1</MathJax.Node></td>
+							<td><MathJax.Node>x_2</MathJax.Node></td>
+							<td><MathJax.Node>y_2</MathJax.Node></td>
+							<td>Width</td>
+							<td>Height</td>
+						</tr>
+					</thead>
+					<tbody>
+					{ props.boundaries.map((b, i) =>
+						<tr key={i}>
+							<td>{i}</td>
+							<td>{b.bounds.min.x.toFixed(2)}</td>
+							<td>{b.bounds.min.y.toFixed(2)}</td>
+							<td>{b.bounds.max.x.toFixed(2)}</td>
+							<td>{b.bounds.max.y.toFixed(2)}</td>
+							<td>{(b.bounds.max.x - b.bounds.min.x).toFixed(2)}</td>
+							<td>{(b.bounds.max.y - b.bounds.min.y).toFixed(2)}</td>
+						</tr>
+					)}
+					</tbody>
+				</Table>
 			</Tab>
 
 			<Tab eventKey="objects" title="Objects">
