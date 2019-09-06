@@ -50,10 +50,9 @@ export default function ControlPanel(props) {
 											</InputGroup.Prepend>
 										}
 										<FormControl
-											data-index={i}
 											placeholder="Function (in ASCIImath)"
 											aria-label="Function (in ASCIImath)"
-											onChange={props.onUtilFunctionInputUpdated}
+							onChange={ (e) => props.onUtilFunctionInputUpdated(i, e.currentTarget.value) }
 											value={func.expression}
 										/>
 										<InputGroup.Append>
@@ -80,16 +79,16 @@ export default function ControlPanel(props) {
 												</Dropdown.Menu>	
 											</Dropdown>
 
-											<Button data-index={i} onClick={props.onChangeColorClicked} style={{backgroundColor: func.color}}><FontAwesomeIcon icon="palette"/></Button>
+							<Button onClick={ () => props.onChangeColorClicked(i) } style={{backgroundColor: func.color}}><FontAwesomeIcon icon="palette"/></Button>
 											{
-												props.showColorPicker && parseInt(props.colorIndex) === i &&
+								props.showColorPicker && props.colorIndex === i &&
 												<div style={ popover }>
 													<div style={ cover } onClick={ props.onChangeColorClicked }/>
 													<SketchPicker disableAlpha={true} color={func.color} onChange={props.onColorUpdated} />
 												</div>
 											}
 
-											<Button variant="danger" data-index={i} onClick={props.onUtilFunctionDeleted}>
+							<Button variant="danger" onClick={ () => props.onUtilFunctionDeleted(i) }>
 												<FontAwesomeIcon icon="trash"/>
 											</Button>
 										</InputGroup.Append>

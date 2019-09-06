@@ -239,16 +239,13 @@ export default class UtilSim extends Component {
 		this.setState({ boundaries })
 	}
 
-	onUtilFunctionInputUpdated = event => {
-		const index = event.currentTarget.dataset.index
-		const expression = event.currentTarget.value
-
+	onUtilFunctionInputUpdated = (index, value) => {
 		let utilFunctions = this.state.utilFunctions.slice()
-		utilFunctions[index].expression = expression
+		utilFunctions[index].expression = value
 
 		// Try to compile the function
 		try {
-            utilFunctions[index].evalFunc = evaluatex(expression)
+            utilFunctions[index].evalFunc = evaluatex(value, { e: Math.E, pi: Math.PI })
 		} catch {
 			utilFunctions[index].evalFunc = null
 		}
@@ -272,18 +269,16 @@ export default class UtilSim extends Component {
 		this.setState({ utilFunctions })
 	}
 
-	onUtilFunctionDeleted = event => {
-		if (!event.currentTarget)
-			return
+	onUtilFunctionDeleted = index => {
 		let utilFunctions = this.state.utilFunctions.slice()
-		utilFunctions.splice(event.currentTarget.dataset.index, 1)
+		utilFunctions.splice(index, 1)
 		this.setState({ utilFunctions })
 	}
 
-	onChangeColorClicked = event => {
+	onChangeColorClicked = index => {
 		this.setState({
 			showColorPicker: !this.state.showColorPicker,
-			colorIndex: event.currentTarget.dataset.index
+			colorIndex: !this.state.showColorPicker ? index : null
 		})
 	}
 
