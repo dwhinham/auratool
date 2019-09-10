@@ -7,6 +7,7 @@ import 'bootstrap/dist/css/bootstrap.css';
 import './index.css';
 
 import UtilSim from './utilsim'
+import * as serviceWorker from './serviceWorker';
 
 // Setup Font Awesome
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -41,3 +42,8 @@ ReactDOM.render(
 	</MathJax.Context>,
 	document.getElementById('root')
 );
+
+// If you want your app to work offline and load faster, you can change
+// unregister() to register() below. Note this comes with some pitfalls.
+// Learn more about service workers: https://bit.ly/CRA-PWA
+serviceWorker.unregister();
