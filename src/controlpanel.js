@@ -9,10 +9,10 @@ import Dropdown from 'react-bootstrap/Dropdown'
 import FormControl from 'react-bootstrap/FormControl'
 import InputGroup from 'react-bootstrap/InputGroup'
 import Tab from 'react-bootstrap/Tab'
-import Tabs from 'react-bootstrap/Tabs'
 import Table from 'react-bootstrap/Table'
-import Util from './util'
+import Tabs from 'react-bootstrap/Tabs'
 
+import { evaluateServerUtilFunction } from './util'
 import { vars, Variables } from './variables'
 
 export default function ControlPanel(props) {
@@ -31,7 +31,7 @@ export default function ControlPanel(props) {
 	}
 
 	const serverUtilValues = Object.keys(props.boundaries).map(i => 
-		Util.evaluateServerUtilFunction(props.utilServer, props.utilFunctions, props.boundaries[i], props.utilConstants, props.utilGlobalVars)
+		evaluateServerUtilFunction(props.utilServer, props.utilFunctions, props.boundaries[i], props.utilConstants, props.utilGlobalVars)
 	)
 	const globalUtilValue = serverUtilValues.length ? serverUtilValues.reduce((a, b) => a + b).toFixed(2) : 0
 

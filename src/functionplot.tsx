@@ -5,7 +5,7 @@ import { Scatter } from 'react-chartjs-2'
 import * as chartjs from 'chart.js'
 import memoize from 'memoize-one'
 
-import Util from './util'
+import { evaluateUtilFunction } from './util'
 
 interface FunctionPlotProps {
     width: number,
@@ -94,7 +94,7 @@ export default class FunctionPlot extends React.Component<FunctionPlotProps, Fun
                 try {
                 boundaries.forEach((b, i) => {
                     const x = b.vars[func.utilVar]
-                    const y = Util.evaluateUtilFunction(func, b, constants, globalVars)
+                    const y = evaluateUtilFunction(func, b, constants, globalVars)
 
                     datasets.push({
                         label: `B${i} U(${func.utilVar})`,

@@ -1,12 +1,8 @@
+import { cloneDeep } from 'lodash'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import evaluatex from 'evaluatex/dist/evaluatex';
 import Matter from 'matter-js'
 import React, { Component } from 'react'
-
-import evaluatex from 'evaluatex/dist/evaluatex';
-import FunctionPlot from './functionplot'
-import ControlPanel from './controlpanel'
-import Server, { MouseMode } from './server'
-import Util from './util'
-import { cloneDeep } from 'lodash'
 
 import Button from 'react-bootstrap/Button'
 import ButtonToolbar from 'react-bootstrap/ButtonToolbar'
@@ -15,8 +11,12 @@ import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
 import Navbar from 'react-bootstrap/Navbar';
 import Row from 'react-bootstrap/Row';
+
+import { boundsOverlap, objectNearBoundary, pointInBounds } from './util'
 import { constants } from './variables'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import ControlPanel from './controlpanel'
+import FunctionPlot from './functionplot'
+import Server, { MouseMode } from './server'
 
 const colors = [
 	'#e6194b',
@@ -147,7 +147,7 @@ export default class UtilSim extends Component {
 			var i = 0
 			while (i < allBodies.length) {
 				const body = allBodies[i]
-				if (!Util.pointInBounds(body.position, b.bounds, true)) {
+				if (!pointInBounds(body.position, b.bounds, true)) {
 					++i
 					continue
 				}
@@ -160,7 +160,7 @@ export default class UtilSim extends Component {
 					++numActive
 
 					// Is the object near any of the boundary edges?
-					if (Util.objectNearBoundary(body, b.bounds))
+					if (objectNearBoundary(body.position, body.circleRadius, b.bounds))
 						++numNearBoundary
 
 					// Make object same colour as boundary that contains it
@@ -205,7 +205,7 @@ export default class UtilSim extends Component {
 				return true
 
 			// Check it doesn't overlap
-			return !Util.boundsOverlap(bounds, boundary.bounds)
+			return !boundsOverlap(bounds, boundary.bounds)
 		})
 	}
 

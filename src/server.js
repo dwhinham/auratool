@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react'
 import Matter from 'matter-js'
-import Util from './util'
+import { createBounds, pointInBounds } from './util'
 import { random } from 'lodash'
 
 // Custom renderer
@@ -171,7 +171,7 @@ export default class Server extends PureComponent {
 			const bottomRight = this.worldToCanvas(boundary.bounds.max)
 			const extents = Matter.Vector.sub(bottomRight, topLeft)
 
-			const mouseInBounds = Util.pointInBounds(mousePosUnsnapped, { min: topLeft, max: bottomRight }, false)
+			const mouseInBounds = pointInBounds(mousePosUnsnapped, { min: topLeft, max: bottomRight }, false)
 			const isClickedBoundary = this.state.clickedBoundary && this.state.clickedBoundary.index === index
 
 			context.fillStyle = boundary.color
@@ -411,7 +411,7 @@ export default class Server extends PureComponent {
 
 				// Otherwise, add a new boundary
 				if (this.props.onBoundaryAdded && event.button === 0 && this.state.mouseDownPos)
-					this.props.onBoundaryAdded(Util.createBounds(this.state.mouseDownPos, mousePos))
+					this.props.onBoundaryAdded(createBounds(this.state.mouseDownPos, mousePos))
 
 				break
 			}
@@ -524,7 +524,7 @@ export default class Server extends PureComponent {
 				}
 
 				// Fixup so that min is always at the top left and max is always at the bottom right
-				newBounds = Util.createBounds(newBounds.min, newBounds.max)
+				newBounds = createBounds(newBounds.min, newBounds.max)
 
 				// Update cursor
 				this.updateCanvasCursorStyle(this.state.resizeMode, this.state.clickedBoundary)
@@ -608,7 +608,7 @@ export default class Server extends PureComponent {
 	boundaryUnderMouse = () => {
 		var boundaryUnder = null
 		this.props.boundaries.forEach((boundary, i) => {
-			if (Util.pointInBounds(this.matterMouse.position, boundary.bounds))
+			if (pointInBounds(this.matterMouse.position, boundary.bounds))
 				boundaryUnder = {index: i, bounds: boundary.bounds}
 		})
 

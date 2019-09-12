@@ -3,9 +3,13 @@ interface Point {
     y: number
 }
 
-interface Boundary {
+interface Bounds {
     min: Point,
-    max: Point,
+    max: Point
+}
+
+interface Boundary {
+    bounds: Bounds,
     vars: any,
     color: string,
 }
@@ -19,6 +23,7 @@ interface UtilityVariables {
 }
 
 interface UtilityFunction {
+    expression: string,
     evalFunc: function,
     utilVar: string,
     color: string
