@@ -1,4 +1,6 @@
-import React from 'react'
+///<reference path="./types/types.d.ts" />
+
+import * as React from 'react'
 
 import MathJax from 'react-mathjax2'
 import { SketchPicker } from 'react-color'
@@ -7,6 +9,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Button from 'react-bootstrap/Button'
 import Dropdown from 'react-bootstrap/Dropdown'
 import FormControl from 'react-bootstrap/FormControl'
+import { FormControlProps } from 'react-bootstrap/FormControl'
 import InputGroup from 'react-bootstrap/InputGroup'
 import Tab from 'react-bootstrap/Tab'
 import Table from 'react-bootstrap/Table'
@@ -15,14 +18,43 @@ import Tabs from 'react-bootstrap/Tabs'
 import { evaluateServerUtilFunction } from './util'
 import { vars, Variables } from './variables'
 
-export default function ControlPanel(props) {
-	const popover = {
+type ChangeColorClickedCallback = (index?: number) => {}
+type ColorUpdatedCallback = () => {}
+
+type UtilFuncAddedCallback = () => {}
+type UtilFuncDeletedCallback = (index: number) => {}
+type UtilFuncExpressionUpdatedCallback = (index: number, value: string) => {}
+type ServerUtilFuncExpressionUpdatedCallback = (value: string) => {}
+type UtilFuncVarUpdatedCallback = (index: number, value: string) => {}
+type UtilConstantUpdatedCallback = (index: number, value: number) => {}
+
+interface ControlPanelProps {
+	showColorPicker: boolean,
+	colorIndex: number,
+	onChangeColorClicked: ChangeColorClickedCallback,
+	onColorUpdated: ColorUpdatedCallback,
+
+	boundaries: Array<Boundary>,
+	utilServer: UtilityFunction,
+	utilFunctions: Array<UtilityFunction>,
+	utilConstants: UtilityVariables,
+	utilGlobalVars: UtilityVariables,
+	onUtilFunctionAdded: UtilFuncAddedCallback,
+	onUtilFunctionDeleted: UtilFuncDeletedCallback,
+	onUtilFunctionUpdated: UtilFuncExpressionUpdatedCallback,
+	onServerUtilFunctionUpdated: ServerUtilFuncExpressionUpdatedCallback,
+	onUtilVarUpdated: UtilFuncVarUpdatedCallback,
+	onUtilConstantUpdated: UtilConstantUpdatedCallback
+}
+
+export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
+	const popover: React.CSSProperties = {
 		position: 'absolute',
 		top: '2.5rem',
 		right: 0,
 		zIndex: 200,
 	}
-	const cover = {
+	const cover: React.CSSProperties = {
 		position: 'fixed',
 		top: '0px',
 		right: '0px',
@@ -30,20 +62,20 @@ export default function ControlPanel(props) {
 		left: '0px',
 	}
 
-	const serverUtilValues = Object.keys(props.boundaries).map(i => 
-		evaluateServerUtilFunction(props.utilServer, props.utilFunctions, props.boundaries[i], props.utilConstants, props.utilGlobalVars)
+	const serverUtilValues = props.boundaries.map(b => 
+		evaluateServerUtilFunction(props.utilServer, props.utilFunctions, b, props.utilConstants, props.utilGlobalVars)
 	)
 	const globalUtilValue = serverUtilValues.length ? serverUtilValues.reduce((a, b) => a + b).toFixed(2) : 0
 
 	return (
-		<Tabs>
+		<Tabs id="control-panel">
 			<Tab eventKey="variables" title="Variables">
 				<Variables boundaries={props.boundaries} utilConstants={props.utilConstants} utilGlobalVars={props.utilGlobalVars} onUtilConstantUpdated={props.onUtilConstantUpdated} />
 			</Tab>
 
 			<Tab eventKey="functions" title="Functions">
 				<h5>Utility functions</h5>
-				{ props.utilFunctions.map((func, i) =>
+				{ props.utilFunctions.map((func: UtilityFunction, i: number) =>
 					<InputGroup className="mb-1" key={i}>
 						<InputGroup.Prepend>
 							<InputGroup.Text>
@@ -54,12 +86,12 @@ export default function ControlPanel(props) {
 						<FormControl
 							placeholder="Function (in ASCIImath)"
 							aria-label="Function (in ASCIImath)"
-							onChange={ (e) => props.onUtilFunctionUpdated(i, e.currentTarget.value) }
+							onChange={ (e: React.FormEvent<FormControlProps & FormControl>) => e.currentTarget.value && props.onUtilFunctionUpdated(i, e.currentTarget.value) }
 							value={func.expression}
 						/>
 						<InputGroup.Append>
 							<Dropdown>
-								<Dropdown.Toggle variant="dark" style={{borderRadius: 0}}>
+								<Dropdown.Toggle id={`util-var-dropdown-${i}`} variant="dark" style={{borderRadius: 0}}>
 									<MathJax.Node inline>{func.utilVar}</MathJax.Node>
 								</Dropdown.Toggle>
 
@@ -79,11 +111,11 @@ export default function ControlPanel(props) {
 								</Dropdown.Menu>	
 							</Dropdown>
 
-							<Button onClick={ () => props.onChangeColorClicked(i) } style={{backgroundColor: func.color}}><FontAwesomeIcon icon="palette"/></Button>
+							<Button onClick={() => props.onChangeColorClicked(i)} style={{backgroundColor: func.color}}><FontAwesomeIcon icon="palette"/></Button>
 							{
 								props.showColorPicker && props.colorIndex === i &&
 								<div style={ popover }>
-									<div style={ cover } onClick={ props.onChangeColorClicked }/>
+									<div style={ cover } onClick={ () => props.onChangeColorClicked() }/>
 									<SketchPicker disableAlpha={true} color={func.color} onChange={props.onColorUpdated} />
 								</div>
 							}
@@ -107,7 +139,7 @@ export default function ControlPanel(props) {
 					<FormControl
 						placeholder="Function (in ASCIImath)"
 						aria-label="Function (in ASCIImath)"
-						onChange={ (e) => props.onServerUtilFunctionUpdated(e.currentTarget.value) }
+						onChange={ (e: React.FormEvent<FormControlProps & FormControl>) => e.currentTarget.value && props.onServerUtilFunctionUpdated(e.currentTarget.value) }
 						value={props.utilServer.expression}
 					/>
 				</InputGroup>
@@ -119,7 +151,7 @@ export default function ControlPanel(props) {
 						</tr>
 					</thead>
 					<tbody>
-					{ Object.keys(props.boundaries).map(i =>
+					{ props.boundaries.map((b, i) =>
 						<tr key={i}>
 							<td>{i}</td>
 							<td><MathJax.Node>{ serverUtilValues[i].toFixed(2) }</MathJax.Node></td>
@@ -164,3 +196,5 @@ export default function ControlPanel(props) {
 		</Tabs>
 	)
 }
+
+export default ControlPanel
