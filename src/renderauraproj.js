@@ -4,32 +4,46 @@
 * @class RenderAuraProj
 */
 
-var RenderAuraProj = {};
+import Bounds from 'matter-js/src/geometry/Bounds'
+import Common from 'matter-js/src/core/Common'
+import Composite from 'matter-js/src/body/Composite'
+import Events from 'matter-js/src/core/Events'
+import Grid from 'matter-js/src/collision/Grid'
+import Mouse from 'matter-js/src/core/Mouse'
+import Vector from 'matter-js/src/geometry/Vector'
+import { round } from 'lodash'
 
-module.exports = RenderAuraProj;
+export class RenderAuraProj {
+    static _requestAnimationFrame = (() => {
+        if (typeof window !== 'undefined') {
+            return  window.requestAnimationFrame ||
+                    window.webkitRequestAnimationFrame ||
+                    window.mozRequestAnimationFrame ||
+                    window.msRequestAnimationFrame ||
+                    function(callback) { window.setTimeout(function() { callback(Common.now()) }, 1000 / 60) }
+                    
+        }
+    })()
+                                
+    static _cancelAnimationFrame = (() => {
+        if (typeof window !== 'undefined') {
+            return  window.cancelAnimationFrame ||
+                    window.mozCancelAnimationFrame ||
+                    window.webkitCancelAnimationFrame ||
+                    window.msCancelAnimationFrame
+        }
+    })()
 
-var lodash = require('lodash');
-var Common = require('matter-js/src/core/Common');
-var Composite = require('matter-js/src/body/Composite');
-var Bounds = require('matter-js/src/geometry/Bounds');
-var Events = require('matter-js/src/core/Events');
-var Grid = require('matter-js/src/collision/Grid');
-var Vector = require('matter-js/src/geometry/Vector');
-var Mouse = require('matter-js/src/core/Mouse');
-
-(function() {
-
-    var _requestAnimationFrame,
-        _cancelAnimationFrame;
-
-    if (typeof window !== 'undefined') {
-        _requestAnimationFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame
-                                      || window.mozRequestAnimationFrame || window.msRequestAnimationFrame
-                                      || function(callback){ window.setTimeout(function() { callback(Common.now()); }, 1000 / 60); };
-
-        _cancelAnimationFrame = window.cancelAnimationFrame || window.mozCancelAnimationFrame
-                                      || window.webkitCancelAnimationFrame || window.msCancelAnimationFrame;
-    }
+    bounds
+    canvas
+    context
+    currentBackground
+    engine
+    frame
+    frameRequestId
+    mouse
+    options
+    textures
 
     /**
      * Creates a new renderer. The options parameter is an object that specifies any properties you wish to override the defaults.
@@ -39,7 +53,7 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {object} [options]
      * @return {render} A new renderer
      */
-    RenderAuraProj.create = function(options) {
+    static create(options) {
         var defaults = {
             controller: RenderAuraProj,
             engine: null,
@@ -87,7 +101,7 @@ var Mouse = require('matter-js/src/core/Mouse');
 
         render.mouse = options.mouse;
         render.engine = options.engine;
-        render.canvas = render.canvas || _createCanvas(render.options.width, render.options.height);
+        render.canvas = render.canvas || RenderAuraProj._createCanvas(render.options.width, render.options.height);
         render.context = render.canvas.getContext('2d');
         render.textures = {};
 
@@ -113,16 +127,16 @@ var Mouse = require('matter-js/src/core/Mouse');
         }
 
         return render;
-    };
+    }
 
     /**
      * Continuously updates the render canvas on the `requestAnimationFrame` event.
      * @method run
      * @param {render} render
      */
-    RenderAuraProj.run = function(render) {
+    static run(render) {
         (function loop(time){
-            render.frameRequestId = _requestAnimationFrame(loop);
+            render.frameRequestId = RenderAuraProj._requestAnimationFrame.call(window, loop);
             RenderAuraProj.world(render);
         })();
     };
@@ -132,8 +146,8 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @method stop
      * @param {render} render
      */
-    RenderAuraProj.stop = function(render) {
-        _cancelAnimationFrame(render.frameRequestId);
+    static stop(render) {
+        RenderAuraProj._cancelAnimationFrame.call(window, render.frameRequestId);
     };
 
     /**
@@ -143,12 +157,12 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {render} render
      * @param {number} pixelRatio
      */
-    RenderAuraProj.setPixelRatio = function(render, pixelRatio) {
+    static setPixelRatio(render, pixelRatio) {
         var options = render.options,
             canvas = render.canvas;
 
         if (pixelRatio === 'auto') {
-            pixelRatio = _getPixelRatio(canvas);
+            pixelRatio = RenderAuraProj._getPixelRatio(canvas);
         }
 
         options.pixelRatio = pixelRatio;
@@ -172,7 +186,7 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {vector} [padding]
      * @param {bool} [center=true]
      */
-    RenderAuraProj.lookAt = function(render, objects, padding, center) {
+    static lookAt(render, objects, padding, center) {
         center = typeof center !== 'undefined' ? center : true;
         objects = Common.isArray(objects) ? objects : [objects];
         padding = padding || {
@@ -262,7 +276,7 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @method startViewTransform
      * @param {render} render
      */
-    RenderAuraProj.startViewTransform = function(render) {
+    static startViewTransform(render) {
         var boundsWidth = render.bounds.max.x - render.bounds.min.x,
             boundsHeight = render.bounds.max.y - render.bounds.min.y,
             boundsScaleX = boundsWidth / render.options.width,
@@ -281,11 +295,11 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @method endViewTransform
      * @param {render} render
      */
-    RenderAuraProj.endViewTransform = function(render) {
+    static endViewTransform(render) {
         render.context.setTransform(render.options.pixelRatio, 0, 0, render.options.pixelRatio, 0, 0);
     };
 
-    RenderAuraProj.drawGrid = function(render, context) {
+    static drawGrid(render, context) {
 		const gridSize = render.options.gridSize
 		const canvasWidth = render.canvas.width
 		const canvasHeight = render.canvas.height
@@ -299,8 +313,8 @@ var Mouse = require('matter-js/src/core/Mouse');
 		const xOriginOffset = -bounds.min.x
 		const yOriginOffset = -bounds.min.y
 
-		const xGridOffset = _mod(xOriginOffset, gridSize)
-		const yGridOffset = _mod(yOriginOffset, gridSize)
+		const xGridOffset = RenderAuraProj._mod(xOriginOffset, gridSize)
+		const yGridOffset = RenderAuraProj._mod(yOriginOffset, gridSize)
 
 		const gridStrokeStyle = 'rgb(128, 128, 255, 0.2)'
 		const originStrokeStyle = 'rgb(255, 128, 128, 0.5)'
@@ -311,7 +325,7 @@ var Mouse = require('matter-js/src/core/Mouse');
         context.fillStyle = 'black'
 
 		const drawXGridLine = (x, label) => {
-			x = _roundDrawCoord(x)
+			x = RenderAuraProj._roundDrawCoord(x)
 			context.beginPath()
 			context.moveTo(x, 0)
 			context.lineTo(x, canvasHeight)
@@ -321,7 +335,7 @@ var Mouse = require('matter-js/src/core/Mouse');
 		}
 
 		const drawYGridLine = (y, label) => {
-			y = _roundDrawCoord(y)
+			y = RenderAuraProj._roundDrawCoord(y)
 			context.beginPath()
 			context.moveTo(0, y)
 			context.lineTo(canvasWidth, y)
@@ -337,7 +351,7 @@ var Mouse = require('matter-js/src/core/Mouse');
 		if (yGridOffset !== 0) yLabel += gridSize
 
 		for (var x = xGridOffset; x < boundsWidth; x += gridSize, xLabel += gridSize) {
-			if (_almostEqual(x, xOriginOffset)) {
+			if (RenderAuraProj._almostEqual(x, xOriginOffset)) {
 				// Red origin line
 				context.save()
 				context.strokeStyle = originStrokeStyle
@@ -348,7 +362,7 @@ var Mouse = require('matter-js/src/core/Mouse');
 		}
 
 		for (var y = yGridOffset; y < boundsHeight; y += gridSize, yLabel += gridSize) {
-			if (_almostEqual(y, yOriginOffset)) {
+			if (RenderAuraProj._almostEqual(y, yOriginOffset)) {
 				// Red origin line
 				context.save()
 				context.strokeStyle = originStrokeStyle
@@ -359,7 +373,7 @@ var Mouse = require('matter-js/src/core/Mouse');
 		}
     };
 
-    RenderAuraProj.drawCrosshair = function(render, context) {
+    static drawCrosshair(render, context) {
 		const scale = render.canvas.width / (render.bounds.max.x - render.bounds.min.x)
         const gridSize = render.options.gridSize
 
@@ -374,8 +388,8 @@ var Mouse = require('matter-js/src/core/Mouse');
 			crosshairY = Math.round(crosshairY / gridSize) * gridSize
 		}
 
-		const drawX = _roundDrawCoord((crosshairX - render.bounds.min.x) * scale)
-		const drawY = _roundDrawCoord((crosshairY - render.bounds.min.y) * scale)
+		const drawX = RenderAuraProj._roundDrawCoord((crosshairX - render.bounds.min.x) * scale)
+		const drawY = RenderAuraProj._roundDrawCoord((crosshairY - render.bounds.min.y) * scale)
 
         context.setLineDash([5, 8])
         context.lineWidth = 1
@@ -393,7 +407,7 @@ var Mouse = require('matter-js/src/core/Mouse');
 		context.stroke()
 
 		// Draw coordinates
-		context.fillText(`${lodash.round(crosshairX, 2)}, ${lodash.round(crosshairY, 2)}`, drawX + 10, drawY - 10)
+		context.fillText(`${round(crosshairX, 2)}, ${round(crosshairY, 2)}`, drawX + 10, drawY - 10)
     };
 
     /**
@@ -402,7 +416,7 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @method world
      * @param {render} render
      */
-    RenderAuraProj.world = function(render) {
+    static world(render) {
         var engine = render.engine,
             world = engine.world,
             canvas = render.canvas,
@@ -423,7 +437,7 @@ var Mouse = require('matter-js/src/core/Mouse');
 
         // apply background if it has changed
         if (render.currentBackground !== background)
-            _applyBackground(render, background);
+            RenderAuraProj._applyBackground(render, background);
 
         // clear the canvas with a transparent fill, to allow the canvas background to show
         context.globalCompositeOperation = 'source-in';
@@ -550,7 +564,7 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {render} render
      * @param {RenderingContext} context
      */
-    RenderAuraProj.debug = function(render, context) {
+    static debug(render, context) {
         var c = context,
             engine = render.engine,
             world = engine.world,
@@ -616,7 +630,7 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {constraint[]} constraints
      * @param {RenderingContext} context
      */
-    RenderAuraProj.constraints = function(constraints, context) {
+    static constraints(constraints, context) {
         var c = context;
 
         for (var i = 0; i < constraints.length; i++) {
@@ -694,9 +708,8 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {body[]} bodies
      * @param {RenderingContext} context
      */
-    RenderAuraProj.bodyShadows = function(render, bodies, context) {
-        var c = context,
-            engine = render.engine;
+    static bodyShadows(render, bodies, context) {
+        var c = context;
 
         for (var i = 0; i < bodies.length; i++) {
             var body = bodies[i];
@@ -743,9 +756,8 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {body[]} bodies
      * @param {RenderingContext} context
      */
-    RenderAuraProj.bodies = function(render, bodies, context) {
+    static bodies(render, bodies, context) {
         var c = context,
-            engine = render.engine,
             options = render.options,
             showInternalEdges = options.showInternalEdges || !options.wireframes,
             body,
@@ -775,7 +787,7 @@ var Mouse = require('matter-js/src/core/Mouse');
                 if (part.render.sprite && part.render.sprite.texture && !options.wireframes) {
                     // part sprite
                     var sprite = part.render.sprite,
-                        texture = _getTexture(render, sprite.texture);
+                        texture = RenderAuraProj._getTexture(render, sprite.texture);
 
                     c.translate(part.position.x, part.position.y);
                     c.rotate(part.angle);
@@ -818,7 +830,7 @@ var Mouse = require('matter-js/src/core/Mouse');
 
                     if (!options.wireframes) {
                         if (options.showSleeping && body.isSleeping) {
-                            c.fillStyle = _colorLuminance(part.render.fillStyle, -0.2)
+                            c.fillStyle = RenderAuraProj._colorLuminance(part.render.fillStyle, -0.2)
                         } else {
                             c.fillStyle = part.render.fillStyle;
                         }
@@ -850,7 +862,7 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {body[]} bodies
      * @param {RenderingContext} context
      */
-    RenderAuraProj.bodyWireframes = function(render, bodies, context) {
+    static bodyWireframes(render, bodies, context) {
         var c = context,
             showInternalEdges = render.options.showInternalEdges,
             body,
@@ -903,13 +915,11 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {body[]} bodies
      * @param {RenderingContext} context
      */
-    RenderAuraProj.bodyConvexHulls = function(render, bodies, context) {
+    static bodyConvexHulls(render, bodies, context) {
         var c = context,
             body,
-            part,
             i,
-            j,
-            k;
+            j;
 
         c.beginPath();
 
@@ -942,7 +952,7 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {body[]} bodies
      * @param {RenderingContext} context
      */
-    RenderAuraProj.vertexNumbers = function(render, bodies, context) {
+    static vertexNumbers(render, bodies, context) {
         var c = context,
             i,
             j,
@@ -968,7 +978,7 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {mouse} mouse
      * @param {RenderingContext} context
      */
-    RenderAuraProj.mousePosition = function(render, mouse, context) {
+    static mousePosition(render, mouse, context) {
         var c = context;
         c.fillStyle = 'rgba(255,255,255,0.8)';
         c.fillText(mouse.position.x + '  ' + mouse.position.y, mouse.position.x + 5, mouse.position.y - 5);
@@ -982,9 +992,8 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {body[]} bodies
      * @param {RenderingContext} context
      */
-    RenderAuraProj.bodyBounds = function(render, bodies, context) {
+    static bodyBounds(render, bodies, context) {
         var c = context,
-            engine = render.engine,
             options = render.options;
 
         c.beginPath();
@@ -1019,9 +1028,8 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {body[]} bodies
      * @param {RenderingContext} context
      */
-    RenderAuraProj.bodyAxes = function(render, bodies, context) {
+    static bodyAxes(render, bodies, context) {
         var c = context,
-            engine = render.engine,
             options = render.options,
             part,
             i,
@@ -1081,9 +1089,8 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {body[]} bodies
      * @param {RenderingContext} context
      */
-    RenderAuraProj.bodyPositions = function(render, bodies, context) {
+    static bodyPositions(render, bodies, context) {
         var c = context,
-            engine = render.engine,
             options = render.options,
             body,
             part,
@@ -1137,7 +1144,7 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {body[]} bodies
      * @param {RenderingContext} context
      */
-    RenderAuraProj.bodyVelocity = function(render, bodies, context) {
+    static bodyVelocity(render, bodies, context) {
         var c = context;
 
         c.beginPath();
@@ -1165,7 +1172,7 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {body[]} bodies
      * @param {RenderingContext} context
      */
-    RenderAuraProj.bodyIds = function(render, bodies, context) {
+    static bodyIds(render, bodies, context) {
         var c = context,
             i,
             j;
@@ -1192,14 +1199,11 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {pair[]} pairs
      * @param {RenderingContext} context
      */
-    RenderAuraProj.collisions = function(render, pairs, context) {
+    static collisions(render, pairs, context) {
         var c = context,
             options = render.options,
             pair,
             collision,
-            corrected,
-            bodyA,
-            bodyB,
             i,
             j;
 
@@ -1275,16 +1279,14 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {pair[]} pairs
      * @param {RenderingContext} context
      */
-    RenderAuraProj.separations = function(render, pairs, context) {
+    static separations(render, pairs, context) {
         var c = context,
             options = render.options,
             pair,
             collision,
-            corrected,
             bodyA,
             bodyB,
-            i,
-            j;
+            i;
 
         c.beginPath();
 
@@ -1332,7 +1334,7 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {grid} grid
      * @param {RenderingContext} context
      */
-    RenderAuraProj.grid = function(render, grid, context) {
+    static grid(render, grid, context) {
         var c = context,
             options = render.options;
 
@@ -1370,9 +1372,8 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {inspector} inspector
      * @param {RenderingContext} context
      */
-    RenderAuraProj.inspector = function(inspector, context) {
-        var engine = inspector.engine,
-            selected = inspector.selected,
+    static inspector(inspector, context) {
+        var selected = inspector.selected,
             render = inspector.render,
             options = render.options,
             bounds;
@@ -1422,6 +1423,8 @@ var Mouse = require('matter-js/src/core/Mouse');
 
                 break;
 
+            default:
+                break;
             }
 
             context.setLineDash([]);
@@ -1456,7 +1459,7 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {} height
      * @return canvas
      */
-    var _createCanvas = function(width, height) {
+    static _createCanvas(width, height) {
         var canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
@@ -1472,7 +1475,7 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {HTMLElement} canvas
      * @return {Number} pixel ratio
      */
-    var _getPixelRatio = function(canvas) {
+    static _getPixelRatio(canvas) {
         var context = canvas.getContext('2d'),
             devicePixelRatio = window.devicePixelRatio || 1,
             backingStorePixelRatio = context.webkitBackingStorePixelRatio || context.mozBackingStorePixelRatio
@@ -1490,7 +1493,7 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {string} imagePath
      * @return {Image} texture
      */
-    var _getTexture = function(render, imagePath) {
+    static _getTexture(render, imagePath) {
         var image = render.textures[imagePath];
 
         if (image)
@@ -1509,7 +1512,7 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {render} render
      * @param {string} background
      */
-    var _applyBackground = function(render, background) {
+    static _applyBackground(render, background) {
         var cssBackground = background;
 
         if (/(jpg|gif|png)$/.test(background))
@@ -1527,7 +1530,7 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {} x
      * @param {} n
      */
-    var _mod = function(x, n) { return (x % n + n) % n };
+    static _mod(x, n) { return (x % n + n) % n };
 
     /**
      * Compares two floating-point numbers for near-equality using an epsilon value.
@@ -1536,7 +1539,7 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @param {} a
      * @param {} b
      */
-    var _almostEqual = function(a, b) { return Math.abs(a - b) < 0.00001 };
+    static _almostEqual(a, b) { return Math.abs(a - b) < 0.00001 };
 
     /**
      * Aligns a draw coordinate.
@@ -1544,13 +1547,13 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @private
      * @param {} x
      */
-    var _roundDrawCoord = function(x) { return Math.round(x) + 0.5 };
+    static _roundDrawCoord(x) { return Math.round(x) + 0.5 };
 
     /**
      * Adjusts a hex string color value's luminosity.
      * Borrowed from https://www.sitepoint.com/javascript-generate-lighter-darker-color/
     */
-    var _colorLuminance = (hex, lum) => {
+    static _colorLuminance(hex, lum) {
         // validate hex string
         hex = String(hex).replace(/[^0-9a-f]/gi, '');
         if (hex.length < 6) {
@@ -1685,5 +1688,4 @@ var Mouse = require('matter-js/src/core/Mouse');
      * @property textures
      * @type {}
      */
-
-})();
+}

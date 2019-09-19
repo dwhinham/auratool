@@ -1,62 +1,117 @@
-import React, { PureComponent } from 'react'
+///<reference path="./types/types.d.ts" />
+
+import * as React from 'react'
 import Matter from 'matter-js'
 import { createBounds, pointInBounds } from './util'
 import { random } from 'lodash'
 
 // Custom renderer
-const RenderAuraProj = require('./renderauraproj')
+import { RenderAuraProj } from './renderauraproj'
 
-export const MouseMode = {
-	OBJECT: 'object',
-	BOUNDARY_EDIT: 'boundary_edit',
-	SNOOKER: 'snooker',
+export enum MouseMode {
+	OBJECT,
+	BOUNDARY_EDIT,
+	SNOOKER
 }
 
-const ResizeMode = {
-	LEFT_EDGE: 'left_edge',
-	RIGHT_EDGE: 'right_edge',
-	TOP_EDGE: 'top_edge',
-	BOTTOM_EDGE: 'bottom_edge',
-	TOP_LEFT_CORNER: 'top_left_corner',
-	TOP_RIGHT_CORNER: 'top_right_corner',
-	BOTTOM_RIGHT_CORNER: 'bottom_right_corner',
-	BOTTOM_LEFT_CORNER: 'bottom_left_corner'
+enum ResizeMode {
+	NONE,
+	LEFT_EDGE,
+	RIGHT_EDGE,
+	TOP_EDGE,
+	BOTTOM_EDGE,
+	TOP_LEFT_CORNER,
+	TOP_RIGHT_CORNER,
+	BOTTOM_RIGHT_CORNER,
+	BOTTOM_LEFT_CORNER,
+	HORIZONTAL_SPLIT,
+	VERTICAL_SPLIT,
+	CROSS_SPLIT
 }
 
-export default class Server extends PureComponent {
+interface BoundaryMouseInfo {
+	index: number,
+	bounds: Bounds
+}
+
+interface ServerProps {
+	boundaries: Array<Boundary>,
+	mouseMode: MouseMode,
+	snapToGrid: boolean,
+	gridSize: number,
+
+	onEngineBeforeUpdate: () => {},
+	onEngineAfterUpdate: () => {},
+
+	onObjectAdded: (body: Matter.Body) => {},
+	onObjectDeleted: (id: number) => {},
+
+	onBoundaryAdded: (bounds: Bounds) => {}
+	onBoundaryUpdated: (index: number, newBounds: Bounds) => {}
+	onBoundaryDeleted: (index: number) => {}
+}
+
+interface ServerState {
+	canvasRef: React.RefObject<HTMLCanvasElement>,
+	showCrosshair: boolean,
+	draggingBody: boolean,
+	mouseButton: number | undefined,
+	mouseDownPos: Point | undefined,
+	mouseDownPosCanvas: Point | undefined,
+	dragStartPos: Point | undefined,
+	dragLastPos: Point | undefined,
+	clickedBoundary: BoundaryMouseInfo | undefined,
+	snookerBody: Matter.Body | undefined,
+	resizeMode: ResizeMode,
+	resizeOldBounds: Bounds | undefined
+}
+
+export default class Server extends React.PureComponent<ServerProps, ServerState> {
 	static whyDidYouRender = true
-	sleepCount = 0
 
-	constructor(props) {
+	matterEngine: Matter.Engine | undefined
+	matterMouse: Matter.Mouse | undefined
+	matterMouseConstraint: Matter.MouseConstraint | undefined
+	matterRender: RenderAuraProj | undefined
+	matterRunner: Matter.Runner | undefined
+	matterWorld: Matter.World | undefined
+
+	constructor(props: ServerProps) {
 		super(props)
 
-		this.canvasRef = React.createRef()
+		let canvasRef: React.RefObject<HTMLCanvasElement> = React.createRef()
 
 		this.state = {
+			canvasRef: canvasRef,
 			showCrosshair: false,
 			draggingBody: false,
-			dragStartPos: null,
-			dragLastPos: null,
-
-			clickedBoundary: null,
-			snookerBody: null,
+			mouseButton: undefined,
+			mouseDownPos: undefined,
+			mouseDownPosCanvas: undefined,
+			dragStartPos: undefined,
+			dragLastPos: undefined,
+			clickedBoundary: undefined,
+			snookerBody: undefined,
+			resizeMode: ResizeMode.NONE,
+			resizeOldBounds: undefined
 		}
-
-		// Create a physics engine
-		this.matterEngine = Matter.Engine.create({
-			enableSleeping: true
-		})
-
-		// Top-down, so no gravity
-		this.matterEngine.world.gravity.x = 0
-		this.matterEngine.world.gravity.y = 0
 	}
 
 	componentDidMount = () => {
 		// Get canvas context and set it up
-		const canvas = this.canvasRef.current
-		this.canvasCtx = canvas.getContext("2d")
-		this.canvasCtx.font = "12px Arial"
+		const canvas = this.state.canvasRef.current
+		if (!canvas) {
+			console.log("Canvas ref is null")
+			return
+		}
+
+		const ctx = canvas.getContext("2d")
+		if (!ctx) {
+			console.log("Couldn't get a 2D canvas context")
+			return
+		}
+
+		ctx.font = "12px Arial"
 
 		// Fit canvas to container
 		// TODO: make this dynamic
@@ -69,16 +124,34 @@ export default class Server extends PureComponent {
 		canvas.oncontextmenu = () => false
 		canvas.onselectstart = () => false		
 
+		// Create a physics world
+		this.matterWorld = Matter.World.create({
+			// Top-down, so no gravity
+			gravity: {
+				scale: 1,
+				x: 0,
+				y: 0
+			}
+		})
+
+		// Create a physics engine
+		this.matterEngine = Matter.Engine.create({
+			enableSleeping: true,
+			world: this.matterWorld
+		})
+
 		// Add mouse control
 		this.matterMouse = Matter.Mouse.create(canvas)
 		this.matterMouseConstraint = Matter.MouseConstraint.create(this.matterEngine, {
             mouse: this.matterMouse,
             constraint: {
-                stiffness: 0.2,
-                render: {
-                    visible: false
-                }
-            }
+				stiffness: 0.2,
+				render: {
+					lineWidth: 0,
+					strokeStyle: 'black',
+					visible: false
+				}
+			} as Matter.Constraint
 		})
 
 		// Create a renderer
@@ -105,21 +178,21 @@ export default class Server extends PureComponent {
 			}
 		})
 		
-		Matter.World.add(this.matterEngine.world, this.matterMouseConstraint)
+		Matter.World.add(this.matterWorld, this.matterMouseConstraint)
 
 		// Temp
-		for (var x = 0; x < 9; ++x) {
-			for (var y = 0; y < 9; ++y) {
+		for (let x = 0; x < 9; ++x) {
+			for (let y = 0; y < 9; ++y) {
 				const body = Matter.Bodies.circle(x * 50 - 200, y * 50 - 200, 20, { restitution: 0.5 })
-				Matter.World.add(this.matterEngine.world, body)		
+				Matter.World.add(this.matterWorld, body)		
 			}
 		}
 
 		const body = Matter.Bodies.circle(0, 300, 50, { restitution: 0.5 })
-		Matter.World.add(this.matterEngine.world, body)	
+		Matter.World.add(this.matterWorld, body)	
 
 		// Create runner
-		this.matterRunner = Matter.Runner.create({isFixed:false, deltaSampleSize: 5})
+		this.matterRunner = Matter.Runner.create({ isFixed: false })
 
 		// Mouse handlers
 		Matter.Events.on(this.matterMouseConstraint, 'startdrag', this.onBodyDragStart)
@@ -135,13 +208,16 @@ export default class Server extends PureComponent {
 		Matter.Events.on(this.matterRender, 'beforeObjects', this.onBeforeObjects)
 
 		// Run the engine
-		Matter.Engine.run(this.matterRunner, this.matterEngine)
+		Matter.Runner.run(this.matterRunner, this.matterEngine)
 
 		// Run the renderer
 		RenderAuraProj.run(this.matterRender)
 	}
 
-	onBeforeUpdate = event => {
+	onBeforeUpdate = (event: Matter.IEventTimestamped<Matter.Engine>) => {
+		if (!this.matterMouseConstraint)
+			return
+			
 		// Should we disable the mouse constraint (grab objects?)
 		if (this.props.mouseMode !== MouseMode.OBJECT)
 			this.matterMouseConstraint.collisionFilter.mask = 0
@@ -149,15 +225,17 @@ export default class Server extends PureComponent {
 			this.matterMouseConstraint.collisionFilter.mask = 0xFFFFFFFF
 	}
 
-	onBeforeRender = event => {
+	onBeforeRender = (event: Matter.IEventTimestamped<Matter.Render>) => {
+		if (!this.matterRender)
+			return
+
 		// Update some rendering options
-		const render = event.source
-		render.options.gridSize = this.props.gridSize
-		render.options.showCrosshair = this.state.showCrosshair
-		render.options.crosshairSnap = this.props.snapToGrid
+		this.matterRender.options.gridSize = this.props.gridSize
+		this.matterRender.options.showCrosshair = this.state.showCrosshair
+		this.matterRender.options.crosshairSnap = this.props.snapToGrid
 	}
 
-	onBeforeObjects = event => {
+	onBeforeObjects = (event: Matter.IEventTimestamped<Matter.Render>) => {
 		const context = event.source.context
 		const mousePos = this.getMousePos(true)
 		const mousePosUnsnapped = this.getMousePos(true, true)
@@ -229,17 +307,17 @@ export default class Server extends PureComponent {
 		}
 	}
 
-	onBodyDragStart = event => {
+	onBodyDragStart = () => {
 		this.setState({ draggingBody: true })
 	}
 
-	onBodyDragEnd = event => {
+	onBodyDragEnd = () => {
 		this.setState({ draggingBody: false })
 	}
 
-	checkResizeMode = bounds => {
+	checkResizeMode = (bounds: Bounds) => {
 		const threshold = 10
-		var resizeMode = null
+		let resizeMode = ResizeMode.NONE
 
 		const mousePosCanvas = this.getMousePos(true, true)
 		const boundsCanvas = {
@@ -275,8 +353,10 @@ export default class Server extends PureComponent {
 		return resizeMode
 	}
 
-	updateCanvasCursorStyle = (resizeMode = null, boundaryUnderMouse = null) => {
-		const canvas = this.canvasRef.current
+	updateCanvasCursorStyle = (resizeMode?: ResizeMode, boundaryUnderMouse?: BoundaryMouseInfo) => {
+		const canvas = this.state.canvasRef.current
+		if (!canvas)
+			return
 
 		switch (resizeMode) {
 			case ResizeMode.TOP_LEFT_CORNER: 		canvas.style.cursor = 'nw-resize'; 	break;
@@ -298,7 +378,7 @@ export default class Server extends PureComponent {
 		}
 	}
 
-	onMouseDown = event => {
+	onMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
 		const mousePos = this.getMousePos()
 		const mousePosCanvas = this.getMousePos(true)
 
@@ -323,7 +403,7 @@ export default class Server extends PureComponent {
 					break
 
 				// Left-click: check & prepare for resize
-				var resizeMode = null
+				let resizeMode = ResizeMode.NONE
 				if (event.button === 0) {
 					resizeMode = this.checkResizeMode(boundary.bounds)
 					this.updateCanvasCursorStyle(resizeMode, boundary)
@@ -346,12 +426,16 @@ export default class Server extends PureComponent {
 		}
 	}
 
-	onMouseUp = event => {
+	onMouseUp = (event: React.MouseEvent<HTMLCanvasElement>) => {
+		if (!this.matterWorld)
+			return
+
 		const mousePos = this.getMousePos()
 		const mousePosCanvas = this.getMousePos(true)
 		const click = 	this.state.mouseButton === event.button &&
-						this.state.mouseDownPosCanvas.x === mousePosCanvas.x &&
-						this.state.mouseDownPosCanvas.y === mousePosCanvas.y
+						this.state.mouseDownPosCanvas &&
+						(this.state.mouseDownPosCanvas.x === mousePosCanvas.x &&
+						this.state.mouseDownPosCanvas.y === mousePosCanvas.y)
 
 		switch (this.props.mouseMode) {
 			case MouseMode.OBJECT: {
@@ -363,7 +447,7 @@ export default class Server extends PureComponent {
 				if (event.button === 0) {
 					const body = Matter.Bodies.circle(mousePos.x, mousePos.y, 20, { restitution: 0.5 })
 				
-					Matter.World.add(this.matterEngine.world, body)
+					Matter.World.add(this.matterWorld, body)
 					if (this.props.onObjectAdded)
 					this.props.onObjectAdded(body)
 				}
@@ -374,7 +458,7 @@ export default class Server extends PureComponent {
 					if (body) {
 						if (this.props.onObjectDeleted)
 						this.props.onObjectDeleted(body.id)
-						Matter.Composite.remove(this.matterEngine.world, body)
+						Matter.Composite.remove(this.matterWorld, body)
 					}
 				}
 
@@ -389,16 +473,16 @@ export default class Server extends PureComponent {
 				const force = Matter.Vector.mult(Matter.Vector.sub(body.position, mousePos), 0.001 * body.mass)
 
 				Matter.Body.applyForce(body, body.position, force)
-				this.setState({ snookerBody: null })
+				this.setState({ snookerBody: undefined })
 				break
 			}
 
 			case MouseMode.BOUNDARY_EDIT: {
 				// Did we just finish resizing? Clear state and bail out
-				if (this.state.resizeMode) {
+				if (this.state.resizeMode !== ResizeMode.NONE) {
 					this.setState({
-						resizeMode: null,
-						resizeOldBounds: null
+						resizeMode: ResizeMode.NONE,
+						resizeOldBounds: undefined
 					})
 					break
 				}
@@ -420,16 +504,19 @@ export default class Server extends PureComponent {
 		}
 
 		this.setState({
-			mouseButton: null,
-			mouseDownPos: null,
-			mouseDownPosCanvas: null,
-			clickedBoundary: null
+			mouseButton: undefined,
+			mouseDownPos: undefined,
+			mouseDownPosCanvas: undefined,
+			clickedBoundary: undefined
 		})
 
-		this.updateCanvasCursorStyle(null, this.boundaryUnderMouse())
+		this.updateCanvasCursorStyle(undefined, this.boundaryUnderMouse())
 	}
 
-	onMouseMove = event => {
+	onMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
+		if (!this.matterRender || !this.matterMouseConstraint)
+			return
+
 		const mousePos = this.getMousePos()
 
 		// Right click always pans
@@ -456,24 +543,23 @@ export default class Server extends PureComponent {
 		switch (this.props.mouseMode) {
 			case MouseMode.BOUNDARY_EDIT: {
 				// Not resizing or moving
-				if (!this.state.resizeMode && !this.state.clickedBoundary) {
+				if (this.state.resizeMode === ResizeMode.NONE && !this.state.clickedBoundary) {
 					// Just look for a boundary under the mouse and update the cursor
 					const boundary = this.boundaryUnderMouse()
 					if (boundary)
 						this.updateCanvasCursorStyle(this.checkResizeMode(boundary.bounds), boundary)
 					else
-						this.updateCanvasCursorStyle(null)
+						this.updateCanvasCursorStyle(undefined)
 					break
 				}
 
 				// Bail out if we don't have a callback or a clicked boundary
-				if (!this.props.onBoundaryUpdated || !this.state.clickedBoundary)
+				if (!this.props.onBoundaryUpdated || !this.state.clickedBoundary || !this.state.resizeOldBounds)
 					break
 
-				const oldBounds = this.state.resizeOldBounds
-				var newBounds = {
-					min: Object.assign({}, oldBounds.min),
-					max: Object.assign({}, oldBounds.max)
+				let newBounds = {
+					min: Object.assign({}, this.state.resizeOldBounds.min),
+					max: Object.assign({}, this.state.resizeOldBounds.max)
 				}
 
 				switch (this.state.resizeMode) {
@@ -537,23 +623,26 @@ export default class Server extends PureComponent {
 		}
 	}
 
-	onMouseOver = event => {
+	onMouseOver = (event: React.MouseEvent<HTMLCanvasElement>) => {
 		// Show crosshair and coords
 		this.setState({ showCrosshair: true })
 	}
 
-	onMouseOut = event => {
+	onMouseOut = (event: React.MouseEvent<HTMLCanvasElement>) => {
 		this.setState({
 			// Hide crosshair and coords
 			showCrosshair: false,
 
 			// Clear drawing/resizing state
-			mouseDownPos: null,
-			clickedBoundary: null
+			mouseDownPos: undefined,
+			clickedBoundary: undefined
 		})
 	}
 
-	onWheel = event => {
+	onWheel = (event: React.WheelEvent<HTMLCanvasElement>) => {
+		if (!this.matterMouse || !this.matterRender)
+			return
+		
 		const mouse = this.matterMouse
 		const zoomFactor = event.deltaY < 0 ? 0.9 : 1 / 0.9
 		const bounds = this.matterRender.bounds
@@ -565,69 +654,91 @@ export default class Server extends PureComponent {
 		bounds.max.y = zoomFactor * (bounds.max.y - mouse.position.y) + mouse.position.y
 	}
 
-	spawnRandomObjects = count => {
-		var bodies = []
-		for (var i = 0; i < count; ++i) {
+	spawnRandomObjects = (count: number) => {
+		if (!this.matterRender || !this.matterWorld)
+			return
+	
+		let bodies = []
+		for (let i = 0; i < count; ++i) {
 			const x = random(this.matterRender.bounds.min.x, this.matterRender.bounds.max.x, true)
 			const y = random(this.matterRender.bounds.min.y, this.matterRender.bounds.max.y, true)
 			bodies.push(Matter.Bodies.circle(x, y, 10, { restitution: 0.5 }))
 		}
 
-		Matter.World.add(this.matterEngine.world, bodies)
+		Matter.World.add(this.matterWorld, bodies)
 	}
 
 	clearAllObjects = () => {
+		if (!this.matterMouseConstraint || !this.matterWorld)
+			return
+
 		// Remove the bodies
-		Matter.World.clear(this.matterEngine.world)
+		Matter.World.clear(this.matterWorld, false)
 
 		// Re-add mouse constraint
-		Matter.World.add(this.matterEngine.world, this.matterMouseConstraint)
+		Matter.World.add(this.matterWorld, this.matterMouseConstraint)
 	}
 
 	showAllObjects = () => {
-		const allBodies = Matter.Composite.allBodies(this.matterEngine.world)
-		if (allBodies.length)
-		RenderAuraProj.lookAt(this.matterRender, allBodies, {x: 50, y: 50}, true)
+		if (!this.matterWorld)
+			return
+
+		if (this.matterWorld.bodies.length > 0)
+			RenderAuraProj.lookAt(this.matterRender, this.matterWorld.bodies, {x: 50, y: 50}, true)
 	}
 
 	resetView = () => {
-		const canvas = this.canvasRef.current
-		this.matterRender.bounds.min.x = -canvas.width / 2
-		this.matterRender.bounds.min.y = -canvas.height / 2
-		this.matterRender.bounds.max.x = canvas.width / 2
-		this.matterRender.bounds.max.y = canvas.height / 2
+		if (!this.state.canvasRef.current || !this.matterRender)
+			return
+
+		const canvas = this.state.canvasRef.current
+		const render = this.matterRender
+
+		let halfExtent = {x: canvas.width / 2, y: canvas.height / 2} as Matter.Vector
+		render.bounds.min = Matter.Vector.neg(halfExtent)
+		render.bounds.max = halfExtent
 	}
 
 	// Convert a position in world space to canvas space
-	worldToCanvas = position => {
+	worldToCanvas = (position: Point) => {
+		if (!this.matterRender)
+			return {x: 0, y: 0} as Point
+
 		const render = this.matterRender
 		const scale = render.canvas.width / (render.bounds.max.x - render.bounds.min.x)
 		return Matter.Vector.mult(Matter.Vector.sub(position, render.bounds.min), scale)
 	}
 
-	boundaryUnderMouse = () => {
-		var boundaryUnder = null
-		this.props.boundaries.forEach((boundary, i) => {
-			if (pointInBounds(this.matterMouse.position, boundary.bounds))
-				boundaryUnder = {index: i, bounds: boundary.bounds}
-		})
+	boundaryUnderMouse = (): BoundaryMouseInfo | undefined => {
+		if (!this.matterMouse)
+			return undefined
 
-		return boundaryUnder
+		for (let i = 0; i < this.props.boundaries.length; ++i) {
+			const boundary = this.props.boundaries[i]
+			if (pointInBounds(this.matterMouse.position, boundary.bounds)) {
+				return {index: i, bounds: boundary.bounds} as BoundaryMouseInfo
+			}
+		}
+
+		return undefined
 	}
 
-	bodyAtPosition = pos => {
-		const allBodies = Matter.Composite.allBodies(this.matterEngine.world)
-		const bodies = Matter.Query.point(allBodies, pos)
+	bodyAtPosition = (position: Point) => {
+		if (!this.matterWorld)
+			return
+
+		const allBodies = Matter.Composite.allBodies(this.matterWorld)
+		const bodies = Matter.Query.point(allBodies, position)
 		return bodies[0]
 	}
 
 	// Get position of mouse in canvas or world space (snapped to grid if necessary)
 	getMousePos = (canvas = false, forceUnsnapped = false) => {
+		if (!this.matterMouse)
+			return {x: 0, y: 0} as Point
+
 		const gridSize = this.props.gridSize
-		const mousePos = {
-			x: this.matterMouse.position.x,
-			y: this.matterMouse.position.y
-		}
+		const mousePos = Object.assign({}, this.matterMouse.position) as Point
 
 		if (!forceUnsnapped && this.props.snapToGrid) {
 			mousePos.x = Math.round(mousePos.x / gridSize) * gridSize
@@ -642,7 +753,7 @@ export default class Server extends PureComponent {
 			// Don't apply any borders/scaling etc to the canvas directly or mouse coords will be off
 			<div id={"canvasContainer"}>
 				<canvas
-					ref={this.canvasRef}
+					ref={this.state.canvasRef}
 					onMouseDown={this.onMouseDown}
 					onMouseUp={this.onMouseUp}
 					onMouseMove={this.onMouseMove}
