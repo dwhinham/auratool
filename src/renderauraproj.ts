@@ -4,46 +4,58 @@
 * @class RenderAuraProj
 */
 
-import Bounds from 'matter-js/src/geometry/Bounds'
-import Common from 'matter-js/src/core/Common'
-import Composite from 'matter-js/src/body/Composite'
-import Events from 'matter-js/src/core/Events'
-import Grid from 'matter-js/src/collision/Grid'
-import Mouse from 'matter-js/src/core/Mouse'
-import Vector from 'matter-js/src/geometry/Vector'
-import { round } from 'lodash'
+import Matter, { Render } from 'matter-js'
+import { extend, isElement, round } from 'lodash'
+
+export interface IAuraProjRendererOptions extends Matter.IRendererOptions {
+    background?: string,
+    enabled?: boolean
+    pixelRatio?: number | string,
+    showAxes?: boolean,
+    showInternalEdges?: boolean,
+    wireframeBackground?: string,
+    showSleeping?: boolean,
+    showDebug?: boolean,
+    showBroadphase?: boolean,
+    showBounds?: boolean,
+    showVelocity?: boolean,
+    showCollisions?: boolean,
+    showSeparations?: boolean,
+    showPositions?: boolean,
+    showAngleIndicator?: boolean,
+    showIds?: boolean,
+    showShadows?: boolean,
+    showVertexNumbers?: boolean,
+    showConvexHulls?: boolean,
+    showMousePosition?: boolean,
+    showGrid?: boolean,
+    gridSize?: number,
+    showCrosshair?: boolean,
+    crosshairSnap?: boolean,
+
+    width?: number,
+    height?: number
+}
+
+export interface IAuraProjRendererDefinition extends Matter.IRenderDefinition {
+    mouse?: Matter.Mouse,
+    options: IAuraProjRendererOptions
+}
 
 export class RenderAuraProj {
-    static _requestAnimationFrame = (() => {
-        if (typeof window !== 'undefined') {
-            return  window.requestAnimationFrame ||
-                    window.webkitRequestAnimationFrame ||
-                    window.mozRequestAnimationFrame ||
-                    window.msRequestAnimationFrame ||
-                    function(callback) { window.setTimeout(function() { callback(Common.now()) }, 1000 / 60) }
-                    
-        }
-    })()
-                                
-    static _cancelAnimationFrame = (() => {
-        if (typeof window !== 'undefined') {
-            return  window.cancelAnimationFrame ||
-                    window.mozCancelAnimationFrame ||
-                    window.webkitCancelAnimationFrame ||
-                    window.msCancelAnimationFrame
-        }
-    })()
+    bounds?: Matter.Bounds
+    canvas?: any//HTMLCanvasElement
+    context?: any//CanvasRenderingContext2D
+    controller: RenderAuraProj = this
+    engine?: Matter.Engine
+    mouse?: Matter.Mouse
+    options: IAuraProjRendererOptions = {}
+    textures: any // FIXME
+    element: any // FIXME
 
-    bounds
-    canvas
-    context
-    currentBackground
-    engine
-    frame
-    frameRequestId
-    mouse
-    options
-    textures
+    currentBackground?: string
+    frame: number = 0
+    frameRequestId: number = 0
 
     /**
      * Creates a new renderer. The options parameter is an object that specifies any properties you wish to override the defaults.
@@ -53,46 +65,48 @@ export class RenderAuraProj {
      * @param {object} [options]
      * @return {render} A new renderer
      */
-    static create(options) {
-        var defaults = {
-            controller: RenderAuraProj,
-            engine: null,
-            element: null,
-            canvas: null,
-            mouse: null,
-            frameRequestId: null,
-            options: {
-                width: 800,
-                height: 600,
-                pixelRatio: 1,
-                background: '#18181d',
-                wireframeBackground: '#0f0f13',
-                gridSize: 50,
-                hasBounds: !!options.bounds,
-                enabled: true,
-                wireframes: true,
-                showSleeping: true,
-                showDebug: false,
-                showBroadphase: false,
-                showBounds: false,
-                showVelocity: false,
-                showCollisions: false,
-                showSeparations: false,
-                showAxes: false,
-                showPositions: false,
-                showAngleIndicator: false,
-                showIds: false,
-                showShadows: false,
-                showVertexNumbers: false,
-                showConvexHulls: false,
-                showInternalEdges: false,
-                showMousePosition: false,
-                showGrid: true,
-                crosshairSnap: false,
-            }
-        };
+    static create(options: IAuraProjRendererDefinition) {
+        // var defaults: IAuraProjRendererDefinition = {
+        //     controller: RenderAuraProj,
+        //     //engine: undefined,
+        //     element: undefined,
+        //     canvas: undefined,
+        //     mouse: undefined,
+        //     //frameRequestId: 0,
+        //     options: {
+        //         width: 800,
+        //         height: 600,
+        //         pixelRatio: 1,
+        //         background: '#18181d',
+        //         wireframeBackground: '#0f0f13',
+        //         gridSize: 50,
+        //         hasBounds: !!options.bounds,
+        //         enabled: true,
+        //         wireframes: true,
+        //         showSleeping: true,
+        //         showDebug: false,
+        //         showBroadphase: false,
+        //         showBounds: false,
+        //         showVelocity: false,
+        //         showCollisions: false,
+        //         showSeparations: false,
+        //         showAxes: false,
+        //         showPositions: false,
+        //         showAngleIndicator: false,
+        //         showIds: false,
+        //         showShadows: false,
+        //         showVertexNumbers: false,
+        //         showConvexHulls: false,
+        //         showInternalEdges: false,
+        //         showMousePosition: false,
+        //         showGrid: true,
+        //         crosshairSnap: false,
+        //     }
+        // };
 
-        var render = Common.extend(defaults, options);
+        //var render: RenderAuraProj = extend(defaults, options);
+        let render = new RenderAuraProj()
+        render = extend(render, options)
 
         if (render.canvas) {
             render.canvas.width = render.options.width || render.canvas.width;
@@ -120,10 +134,10 @@ export class RenderAuraProj {
             RenderAuraProj.setPixelRatio(render, render.options.pixelRatio);
         }
 
-        if (Common.isElement(render.element)) {
+        if (isElement(render.element)) {
             render.element.appendChild(render.canvas);
         } else if (!render.canvas.parentNode) {
-            Common.log('RenderAuraProj.create: options.element was undefined, render.canvas was created but not appended', 'warn');
+            console.log('RenderAuraProj.create: options.element was undefined, render.canvas was created but not appended', 'warn');
         }
 
         return render;
@@ -134,9 +148,9 @@ export class RenderAuraProj {
      * @method run
      * @param {render} render
      */
-    static run(render) {
-        (function loop(time){
-            render.frameRequestId = RenderAuraProj._requestAnimationFrame.call(window, loop);
+    static run(render: RenderAuraProj) {
+        (function loop(){
+            render.frameRequestId = window.requestAnimationFrame(loop);
             RenderAuraProj.world(render);
         })();
     };
@@ -146,8 +160,8 @@ export class RenderAuraProj {
      * @method stop
      * @param {render} render
      */
-    static stop(render) {
-        RenderAuraProj._cancelAnimationFrame.call(window, render.frameRequestId);
+    static stop(render: RenderAuraProj) {
+        window.cancelAnimationFrame(render.frameRequestId);
     };
 
     /**
@@ -157,7 +171,7 @@ export class RenderAuraProj {
      * @param {render} render
      * @param {number} pixelRatio
      */
-    static setPixelRatio(render, pixelRatio) {
+    static setPixelRatio(render: RenderAuraProj, pixelRatio: number | string) {
         var options = render.options,
             canvas = render.canvas;
 
@@ -186,7 +200,7 @@ export class RenderAuraProj {
      * @param {vector} [padding]
      * @param {bool} [center=true]
      */
-    static lookAt(render, objects, padding, center) {
+    static lookAt(render: RenderAuraProj, objects, padding, center) {
         center = typeof center !== 'undefined' ? center : true;
         objects = Common.isArray(objects) ? objects : [objects];
         padding = padding || {
@@ -276,7 +290,7 @@ export class RenderAuraProj {
      * @method startViewTransform
      * @param {render} render
      */
-    static startViewTransform(render) {
+    static startViewTransform(render: RenderAuraProj) {
         var boundsWidth = render.bounds.max.x - render.bounds.min.x,
             boundsHeight = render.bounds.max.y - render.bounds.min.y,
             boundsScaleX = boundsWidth / render.options.width,
@@ -295,11 +309,11 @@ export class RenderAuraProj {
      * @method endViewTransform
      * @param {render} render
      */
-    static endViewTransform(render) {
+    static endViewTransform(render: RenderAuraProj) {
         render.context.setTransform(render.options.pixelRatio, 0, 0, render.options.pixelRatio, 0, 0);
     };
 
-    static drawGrid(render, context) {
+    static drawGrid(render: RenderAuraProj, context: CanvasRenderingContext2D) {
 		const gridSize = render.options.gridSize
 		const canvasWidth = render.canvas.width
 		const canvasHeight = render.canvas.height
@@ -324,7 +338,7 @@ export class RenderAuraProj {
         context.strokeStyle = gridStrokeStyle
         context.fillStyle = 'black'
 
-		const drawXGridLine = (x, label) => {
+		const drawXGridLine = (x: number, label: string) => {
 			x = RenderAuraProj._roundDrawCoord(x)
 			context.beginPath()
 			context.moveTo(x, 0)
@@ -334,7 +348,7 @@ export class RenderAuraProj {
 			context.fillText(label, x + 2, canvasHeight - 2)
 		}
 
-		const drawYGridLine = (y, label) => {
+		const drawYGridLine = (y: number, label: string) => {
 			y = RenderAuraProj._roundDrawCoord(y)
 			context.beginPath()
 			context.moveTo(0, y)
@@ -355,10 +369,10 @@ export class RenderAuraProj {
 				// Red origin line
 				context.save()
 				context.strokeStyle = originStrokeStyle
-				drawXGridLine(x * scale, xLabel)
+				drawXGridLine(x * scale, xLabel.toString())
 				context.restore()
 			}
-			else drawXGridLine(x * scale, xLabel)
+			else drawXGridLine(x * scale, xLabel.toString())
 		}
 
 		for (var y = yGridOffset; y < boundsHeight; y += gridSize, yLabel += gridSize) {
@@ -366,14 +380,14 @@ export class RenderAuraProj {
 				// Red origin line
 				context.save()
 				context.strokeStyle = originStrokeStyle
-				drawYGridLine(y * scale, yLabel)
+				drawYGridLine(y * scale, yLabel.toString())
 				context.restore()
 			}
-			else drawYGridLine(y * scale, yLabel)
+			else drawYGridLine(y * scale, yLabel.toString())
 		}
     };
 
-    static drawCrosshair(render, context) {
+    static drawCrosshair(render: RenderAuraProj, context: CanvasRenderingContext2D) {
 		const scale = render.canvas.width / (render.bounds.max.x - render.bounds.min.x)
         const gridSize = render.options.gridSize
 
@@ -708,7 +722,7 @@ export class RenderAuraProj {
      * @param {body[]} bodies
      * @param {RenderingContext} context
      */
-    static bodyShadows(render, bodies, context) {
+    static bodyShadows(render: RenderAuraProj, bodies: Array<Matter.Body>, context: CanvasRenderingContext2D) {
         var c = context;
 
         for (var i = 0; i < bodies.length; i++) {
@@ -741,10 +755,10 @@ export class RenderAuraProj {
 
             c.fill();
 
-            c.shadowColor = null;
-            c.shadowOffsetX = null;
-            c.shadowOffsetY = null;
-            c.shadowBlur = null;
+            c.shadowColor = undefined;
+            c.shadowOffsetX = undefined;
+            c.shadowOffsetY = undefined;
+            c.shadowBlur = undefined;
         }
     };
 
@@ -862,7 +876,7 @@ export class RenderAuraProj {
      * @param {body[]} bodies
      * @param {RenderingContext} context
      */
-    static bodyWireframes(render, bodies, context) {
+    static bodyWireframes(render: RenderAuraProj, bodies: Array<Matter.Body>, context: CanvasRenderingContext2D) {
         var c = context,
             showInternalEdges = render.options.showInternalEdges,
             body,
@@ -915,7 +929,7 @@ export class RenderAuraProj {
      * @param {body[]} bodies
      * @param {RenderingContext} context
      */
-    static bodyConvexHulls(render, bodies, context) {
+    static bodyConvexHulls(render: RenderAuraProj, bodies: Array<Matter.Body>, context: CanvasRenderingContext2D) {
         var c = context,
             body,
             i,
@@ -952,7 +966,7 @@ export class RenderAuraProj {
      * @param {body[]} bodies
      * @param {RenderingContext} context
      */
-    static vertexNumbers(render, bodies, context) {
+    static vertexNumbers(render: RenderAuraProj, bodies: Array<Matter.Body>, context: CanvasRenderingContext2D) {
         var c = context,
             i,
             j,
@@ -978,7 +992,7 @@ export class RenderAuraProj {
      * @param {mouse} mouse
      * @param {RenderingContext} context
      */
-    static mousePosition(render, mouse, context) {
+    static mousePosition(render: RenderAuraProj, mouse: Matter.Mouse, context: CanvasRenderingContext2D) {
         var c = context;
         c.fillStyle = 'rgba(255,255,255,0.8)';
         c.fillText(mouse.position.x + '  ' + mouse.position.y, mouse.position.x + 5, mouse.position.y - 5);
@@ -992,7 +1006,7 @@ export class RenderAuraProj {
      * @param {body[]} bodies
      * @param {RenderingContext} context
      */
-    static bodyBounds(render, bodies, context) {
+    static bodyBounds(render: RenderAuraProj, bodies: Array<Matter.Body>, context: CanvasRenderingContext2D) {
         var c = context,
             options = render.options;
 
@@ -1028,7 +1042,7 @@ export class RenderAuraProj {
      * @param {body[]} bodies
      * @param {RenderingContext} context
      */
-    static bodyAxes(render, bodies, context) {
+    static bodyAxes(render: RenderAuraProj, bodies: Array<Matter.Body>, context: CanvasRenderingContext2D) {
         var c = context,
             options = render.options,
             part,
@@ -1089,7 +1103,7 @@ export class RenderAuraProj {
      * @param {body[]} bodies
      * @param {RenderingContext} context
      */
-    static bodyPositions(render, bodies, context) {
+    static bodyPositions(render: RenderAuraProj, bodies: Array<Matter.Body>, context: CanvasRenderingContext2D) {
         var c = context,
             options = render.options,
             body,
@@ -1172,7 +1186,7 @@ export class RenderAuraProj {
      * @param {body[]} bodies
      * @param {RenderingContext} context
      */
-    static bodyIds(render, bodies, context) {
+    static bodyIds(render: RenderAuraProj, bodies: Array<Matter.Body>, context: CanvasRenderingContext2D) {
         var c = context,
             i,
             j;
@@ -1199,7 +1213,7 @@ export class RenderAuraProj {
      * @param {pair[]} pairs
      * @param {RenderingContext} context
      */
-    static collisions(render, pairs, context) {
+    static collisions(render: RenderAuraProj, pairs: Array<Matter.IPair>, context: CanvasRenderingContext2D) {
         var c = context,
             options = render.options,
             pair,
@@ -1279,7 +1293,7 @@ export class RenderAuraProj {
      * @param {pair[]} pairs
      * @param {RenderingContext} context
      */
-    static separations(render, pairs, context) {
+    static separations(render: RenderAuraProj, pairs: Array<Matter.IPair>, context: CanvasRenderingContext2D) {
         var c = context,
             options = render.options,
             pair,
@@ -1334,7 +1348,7 @@ export class RenderAuraProj {
      * @param {grid} grid
      * @param {RenderingContext} context
      */
-    static grid(render, grid, context) {
+    static grid(render: RenderAuraProj, grid: Matter.Grid, context: CanvasRenderingContext2D) {
         var c = context,
             options = render.options;
 
@@ -1346,7 +1360,7 @@ export class RenderAuraProj {
 
         c.beginPath();
 
-        var bucketKeys = Common.keys(grid.buckets);
+        var bucketKeys = Object.keys(grid.buckets);
 
         for (var i = 0; i < bucketKeys.length; i++) {
             var bucketId = bucketKeys[i];
@@ -1372,7 +1386,7 @@ export class RenderAuraProj {
      * @param {inspector} inspector
      * @param {RenderingContext} context
      */
-    static inspector(inspector, context) {
+    static inspector(inspector: any, context: CanvasRenderingContext2D) {
         var selected = inspector.selected,
             render = inspector.render,
             options = render.options,
@@ -1432,7 +1446,7 @@ export class RenderAuraProj {
         }
 
         // render selection region
-        if (inspector.selectStart !== null) {
+        if (inspector.selectStart !== undefined) {
             context.translate(0.5, 0.5);
             context.lineWidth = 1;
             context.strokeStyle = 'rgba(255,165,0,0.6)';
@@ -1459,7 +1473,7 @@ export class RenderAuraProj {
      * @param {} height
      * @return canvas
      */
-    static _createCanvas(width, height) {
+    static _createCanvas(width: number, height: number) {
         var canvas = document.createElement('canvas');
         canvas.width = width;
         canvas.height = height;
@@ -1475,7 +1489,7 @@ export class RenderAuraProj {
      * @param {HTMLElement} canvas
      * @return {Number} pixel ratio
      */
-    static _getPixelRatio(canvas) {
+    static _getPixelRatio(canvas: HTMLCanvasElement) {
         var context = canvas.getContext('2d'),
             devicePixelRatio = window.devicePixelRatio || 1,
             backingStorePixelRatio = context.webkitBackingStorePixelRatio || context.mozBackingStorePixelRatio
@@ -1493,7 +1507,7 @@ export class RenderAuraProj {
      * @param {string} imagePath
      * @return {Image} texture
      */
-    static _getTexture(render, imagePath) {
+    static _getTexture(render: RenderAuraProj, imagePath: string) {
         var image = render.textures[imagePath];
 
         if (image)
@@ -1512,7 +1526,7 @@ export class RenderAuraProj {
      * @param {render} render
      * @param {string} background
      */
-    static _applyBackground(render, background) {
+    static _applyBackground(render: RenderAuraProj, background: string) {
         var cssBackground = background;
 
         if (/(jpg|gif|png)$/.test(background))
@@ -1530,7 +1544,7 @@ export class RenderAuraProj {
      * @param {} x
      * @param {} n
      */
-    static _mod(x, n) { return (x % n + n) % n };
+    static _mod(x: number, n: number) { return (x % n + n) % n };
 
     /**
      * Compares two floating-point numbers for near-equality using an epsilon value.
@@ -1539,7 +1553,7 @@ export class RenderAuraProj {
      * @param {} a
      * @param {} b
      */
-    static _almostEqual(a, b) { return Math.abs(a - b) < 0.00001 };
+    static _almostEqual(a: number, b: number) { return Math.abs(a - b) < 0.00001 };
 
     /**
      * Aligns a draw coordinate.
@@ -1547,13 +1561,13 @@ export class RenderAuraProj {
      * @private
      * @param {} x
      */
-    static _roundDrawCoord(x) { return Math.round(x) + 0.5 };
+    static _roundDrawCoord(x: number) { return Math.round(x) + 0.5 };
 
     /**
      * Adjusts a hex string color value's luminosity.
      * Borrowed from https://www.sitepoint.com/javascript-generate-lighter-darker-color/
     */
-    static _colorLuminance(hex, lum) {
+    static _colorLuminance(hex: string, lum: number) {
         // validate hex string
         hex = String(hex).replace(/[^0-9a-f]/gi, '');
         if (hex.length < 6) {
@@ -1623,7 +1637,7 @@ export class RenderAuraProj {
      *
      * @property element
      * @type HTMLElement
-     * @default null
+     * @default undefined
      */
 
     /**
@@ -1631,7 +1645,7 @@ export class RenderAuraProj {
      *
      * @property canvas
      * @type HTMLCanvasElement
-     * @default null
+     * @default undefined
      */
 
     /**
