@@ -12,7 +12,7 @@ import Container from 'react-bootstrap/Container';
 import Navbar from 'react-bootstrap/Navbar';
 import Row from 'react-bootstrap/Row';
 
-import { boundsOverlap, objectNearBoundary, pointInBounds } from './util'
+import { boundsOverlap, pointInBounds, pointNearBounds } from './util'
 import { constants } from './variables'
 import ControlPanel from './controlpanel'
 import FunctionPlot from './functionplot'
@@ -159,15 +159,15 @@ export default class UtilSim extends Component {
 				if (!body.isSleeping)
 					++numActive
 
-					// Is the object near any of the boundary edges?
-					if (objectNearBoundary(body.position, body.circleRadius, b.bounds))
-						++numNearBoundary
+				// Is the object near any of the boundary edges?
+				if (pointNearBounds(body.position, body.circleRadius, b.bounds))
+					++numNearBoundary
 
-					// Make object same colour as boundary that contains it
-					body.render.fillStyle = b.color
+				// Make object same colour as boundary that contains it
+				body.render.fillStyle = b.color
 
 				// Remove from 'all objects array'
-					allBodies.splice(i, 1)
+				allBodies.splice(i, 1)
 			}
 
 			// Fake CPU usage (we can't get real CPU usage in JS)
@@ -193,15 +193,15 @@ export default class UtilSim extends Component {
 	}
 	
 	// Validate the bounds
-	validateBoundary = (bounds, indexToIgnore = null) => {
+	validateBoundary = (bounds, boundaryToIgnore = undefined) => {
 		// Reject min == max
 		if (bounds.min.x === bounds.max.x || bounds.min.y === bounds.max.y)
 			return false
 
 		// Reject overlapping boundaries
-		return this.state.boundaries.every((boundary, i) => {
+		return this.state.boundaries.every(boundary => {
 			// Prevent comparison against self
-			if (indexToIgnore !== null && indexToIgnore === i)
+			if (boundary === boundaryToIgnore)
 				return true
 
 			// Check it doesn't overlap
@@ -222,14 +222,22 @@ export default class UtilSim extends Component {
 		this.setState({ boundaries, lastBoundaryMoveTime: window.performance.now() })
 	}
 
-	onBoundaryDeleted = index => {
+	onBoundaryDeleted = boundary => {
+		const index = this.state.boundaries.findIndex(b => b === boundary)
+		if (index === -1)
+			return
+
 		var boundaries = this.state.boundaries.slice()
 		boundaries.splice(index, 1)
 		this.setState({ boundaries, lastBoundaryMoveTime: window.performance.now() })
 	}
 
-	onBoundaryUpdated = (index, bounds) => {
-		if (!this.validateBoundary(bounds, index))
+	onBoundaryUpdated = (boundary, bounds, validate = true) => {
+		if (validate && !this.validateBoundary(bounds, boundary))
+			return
+
+		const index = this.state.boundaries.findIndex(b => b === boundary)
+		if (index === -1)
 			return
 
 		const boundaries = this.state.boundaries.slice()
@@ -248,7 +256,7 @@ export default class UtilSim extends Component {
 
 		// Try to compile the function
 		try {
-            utilFunctions[index].evalFunc = evaluatex(value, { e: Math.E, pi: Math.PI })
+			utilFunctions[index].evalFunc = evaluatex(value, { e: Math.E, pi: Math.PI })
 		} catch {
 			utilFunctions[index].evalFunc = null
 		}
@@ -262,7 +270,7 @@ export default class UtilSim extends Component {
 
 		// Try to compile the function
 		try {
-            utilServer.evalFunc = evaluatex(value, { e: Math.E, pi: Math.PI })
+			utilServer.evalFunc = evaluatex(value, { e: Math.E, pi: Math.PI })
 		} catch {
 			utilServer.evalFunc = null
 		}

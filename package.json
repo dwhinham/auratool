@@ -16,12 +16,9 @@
     "@types/react-bootstrap": "^0.32.19",
     "@types/react-color": "^3.0.1",
     "@types/react-dom": "16.9.0",
-    "@typescript-eslint/eslint-plugin": "^2.2.0",
-    "@typescript-eslint/parser": "^2.2.0",
     "@welldone-software/why-did-you-render": "^3.3.5",
     "bootstrap": "4.3.1",
     "chart.js": "^2.8.0",
-    "eslint": "^6.4.0",
     "evaluatex": "2.1.2",
     "gh-pages": "^2.1.1",
     "jquery": "3.4.1",
@@ -60,5 +57,15 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^2.3.0",
+    "@typescript-eslint/parser": "^2.3.0",
+    "eslint": "^6.4.0",
+    "eslint-config-airbnb": "^18.0.1",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-jsx-a11y": "^6.2.3",
+    "eslint-plugin-react": "^7.14.3",
+    "eslint-plugin-react-hooks": "^1.7.0"
   }
 }

@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import Matter from 'matter-js'
-import { createBounds, pointInBounds } from './util'
+import { circleOverlapBounds, createBounds, distanceSq, pointInBounds } from './util'
 import { random } from 'lodash'
 
 // Custom renderer
@@ -13,6 +13,8 @@ export enum MouseMode {
 	BOUNDARY_EDIT,
 	SNOOKER
 }
+
+const MOUSE_BOUNDS_THRESHOLD = 10
 
 enum ResizeMode {
 	NONE,
@@ -29,11 +31,6 @@ enum ResizeMode {
 	CROSS_SPLIT
 }
 
-interface BoundaryMouseInfo {
-	index: number,
-	bounds: Bounds
-}
-
 interface ServerProps {
 	boundaries: Array<Boundary>,
 	mouseMode: MouseMode,
@@ -47,39 +44,40 @@ interface ServerProps {
 	onObjectDeleted: (id: number) => {},
 
 	onBoundaryAdded: (bounds: Bounds) => {}
-	onBoundaryUpdated: (index: number, newBounds: Bounds) => {}
-	onBoundaryDeleted: (index: number) => {}
+	onBoundaryUpdated: (boundary: Boundary, newBounds: Bounds, validate?: boolean) => {}
+	onBoundaryDeleted: (boundary: Boundary) => {}
 }
 
 interface ServerState {
 	canvasRef: React.RefObject<HTMLCanvasElement>,
 	showCrosshair: boolean,
 	draggingBody: boolean,
-	mouseButton: number | undefined,
-	mouseDownPos: Point | undefined,
-	mouseDownPosCanvas: Point | undefined,
-	dragStartPos: Point | undefined,
-	dragLastPos: Point | undefined,
-	clickedBoundary: BoundaryMouseInfo | undefined,
-	snookerBody: Matter.Body | undefined,
+	mouseButton?: number,
+	mouseDownPos?: Point,
+	mouseDownPosCanvas?: Point,
+	dragStartPos?: Point,
+	dragLastPos?: Point,
+	snookerBody?: Matter.Body,
+	clickedBoundary?: Boundary,
+	clickedOldBounds?: Bounds,
+	resizeBoundaries?: Array<Boundary>,
 	resizeMode: ResizeMode,
-	resizeOldBounds: Bounds | undefined
 }
 
 export default class Server extends React.PureComponent<ServerProps, ServerState> {
 	static whyDidYouRender = true
 
-	matterEngine: Matter.Engine | undefined
-	matterMouse: Matter.Mouse | undefined
-	matterMouseConstraint: Matter.MouseConstraint | undefined
-	matterRender: RenderAuraProj | undefined
-	matterRunner: Matter.Runner | undefined
-	matterWorld: Matter.World | undefined
+	matterEngine?: Matter.Engine
+	matterMouse?: Matter.Mouse
+	matterMouseConstraint?: Matter.MouseConstraint
+	matterRender?: RenderAuraProj
+	matterRunner?: Matter.Runner
+	matterWorld?: Matter.World
 
 	constructor(props: ServerProps) {
 		super(props)
 
-		let canvasRef: React.RefObject<HTMLCanvasElement> = React.createRef()
+		const canvasRef: React.RefObject<HTMLCanvasElement> = React.createRef()
 
 		this.state = {
 			canvasRef: canvasRef,
@@ -90,10 +88,11 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 			mouseDownPosCanvas: undefined,
 			dragStartPos: undefined,
 			dragLastPos: undefined,
-			clickedBoundary: undefined,
 			snookerBody: undefined,
+			clickedBoundary: undefined,
+			clickedOldBounds: undefined,
+			resizeBoundaries: undefined,
 			resizeMode: ResizeMode.NONE,
-			resizeOldBounds: undefined
 		}
 	}
 
@@ -143,8 +142,8 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 		// Add mouse control
 		this.matterMouse = Matter.Mouse.create(canvas)
 		this.matterMouseConstraint = Matter.MouseConstraint.create(this.matterEngine, {
-            mouse: this.matterMouse,
-            constraint: {
+			mouse: this.matterMouse,
+			constraint: {
 				stiffness: 0.2,
 				render: {
 					lineWidth: 0,
@@ -244,18 +243,18 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 		context.setLineDash([])
 		context.lineWidth = 1
 
-		this.props.boundaries.forEach((boundary, index) => {
+		this.props.boundaries.forEach(boundary => {
 			const topLeft = this.worldToCanvas(boundary.bounds.min)
 			const bottomRight = this.worldToCanvas(boundary.bounds.max)
 			const extents = Matter.Vector.sub(bottomRight, topLeft)
 
 			const mouseInBounds = pointInBounds(mousePosUnsnapped, { min: topLeft, max: bottomRight }, false)
-			const isClickedBoundary = this.state.clickedBoundary && this.state.clickedBoundary.index === index
+			const isClickedBoundary = this.state.clickedBoundary && this.state.clickedBoundary === boundary
 
 			context.fillStyle = boundary.color
 			context.strokeStyle = 'black'
 
-			if (this.props.mouseMode === MouseMode.BOUNDARY_EDIT && (isClickedBoundary || mouseInBounds))
+			if (this.props.mouseMode === MouseMode.BOUNDARY_EDIT && this.state.resizeMode === ResizeMode.NONE && (isClickedBoundary || mouseInBounds))
 				context.globalAlpha = 0.6
 			else
 				context.globalAlpha = 0.4
@@ -269,7 +268,7 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 
 		switch (this.props.mouseMode) {
 			case MouseMode.BOUNDARY_EDIT: {
-				if (!this.state.mouseDownPos || this.state.clickedBoundary)
+				if (!this.state.mouseDownPos || this.state.clickedBoundary || this.state.resizeBoundaries)
 					break
 
 				// Draw outline of new boundary
@@ -315,50 +314,70 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 		this.setState({ draggingBody: false })
 	}
 
-	checkResizeMode = (bounds: Bounds) => {
-		const threshold = 10
+	checkResizeMode = (bUnder?: Boundary, bNear?: Array<Boundary>) => {
 		let resizeMode = ResizeMode.NONE
 
-		const mousePosCanvas = this.getMousePos(true, true)
-		const boundsCanvas = {
-			min: this.worldToCanvas(bounds.min),
-			max: this.worldToCanvas(bounds.max)
+		// Mouse near a boundary edge
+		if (bNear && bNear.length > 1)
+		{
+			// Mouse near a 4-way intersection
+			if (bNear.length === 4) {
+				resizeMode = ResizeMode.CROSS_SPLIT
+			}
+			// Mouse near 2-way intersection
+			else if (bNear.length === 2) {
+				const b1 = bNear[0].bounds
+				const b2 = bNear[1].bounds
+				if (b1.max.y <= b2.min.y || b2.max.y <= b1.min.y)
+					resizeMode = ResizeMode.HORIZONTAL_SPLIT
+				else
+					resizeMode = ResizeMode.VERTICAL_SPLIT
+			}
 		}
-
-		const leftDist 	= Math.abs(boundsCanvas.min.x - mousePosCanvas.x)
-		const rightDist = Math.abs(boundsCanvas.max.x - mousePosCanvas.x)
-		const topDist = Math.abs(boundsCanvas.min.y - mousePosCanvas.y)
-		const bottomDist = Math.abs(boundsCanvas.max.y - mousePosCanvas.y)
-
-		// Check corners
-		if (leftDist <= threshold && topDist <= threshold)
-			resizeMode = ResizeMode.TOP_LEFT_CORNER
-		else if (rightDist <= threshold && topDist <= threshold)
-			resizeMode = ResizeMode.TOP_RIGHT_CORNER
-		else if (rightDist <= threshold && bottomDist <= threshold)
-			resizeMode = ResizeMode.BOTTOM_RIGHT_CORNER
-		else if (leftDist <= threshold && bottomDist <= threshold)
-			resizeMode = ResizeMode.BOTTOM_LEFT_CORNER
-
-		// Check edges
-		else if (leftDist <= threshold)
-			resizeMode = ResizeMode.LEFT_EDGE
-		else if (rightDist <= threshold)
-			resizeMode = ResizeMode.RIGHT_EDGE
-		else if (topDist <= threshold)
-			resizeMode = ResizeMode.TOP_EDGE
-		else if (bottomDist <= threshold)
-			resizeMode = ResizeMode.BOTTOM_EDGE
+		else if (bUnder) {
+			const mousePosCanvas = this.getMousePos(true, true)
+			const boundsCanvas = {
+				min: this.worldToCanvas(bUnder.bounds.min),
+				max: this.worldToCanvas(bUnder.bounds.max)
+			}
+	
+			const leftDist 	= Math.abs(boundsCanvas.min.x - mousePosCanvas.x)
+			const rightDist = Math.abs(boundsCanvas.max.x - mousePosCanvas.x)
+			const topDist = Math.abs(boundsCanvas.min.y - mousePosCanvas.y)
+			const bottomDist = Math.abs(boundsCanvas.max.y - mousePosCanvas.y)
+	
+			// Check corners
+			if (leftDist <= MOUSE_BOUNDS_THRESHOLD && topDist <= MOUSE_BOUNDS_THRESHOLD)
+				resizeMode = ResizeMode.TOP_LEFT_CORNER
+			else if (rightDist <= MOUSE_BOUNDS_THRESHOLD && topDist <= MOUSE_BOUNDS_THRESHOLD)
+				resizeMode = ResizeMode.TOP_RIGHT_CORNER
+			else if (rightDist <= MOUSE_BOUNDS_THRESHOLD && bottomDist <= MOUSE_BOUNDS_THRESHOLD)
+				resizeMode = ResizeMode.BOTTOM_RIGHT_CORNER
+			else if (leftDist <= MOUSE_BOUNDS_THRESHOLD && bottomDist <= MOUSE_BOUNDS_THRESHOLD)
+				resizeMode = ResizeMode.BOTTOM_LEFT_CORNER
+	
+			// Check edges
+			else if (leftDist <= MOUSE_BOUNDS_THRESHOLD)
+				resizeMode = ResizeMode.LEFT_EDGE
+			else if (rightDist <= MOUSE_BOUNDS_THRESHOLD)
+				resizeMode = ResizeMode.RIGHT_EDGE
+			else if (topDist <= MOUSE_BOUNDS_THRESHOLD)
+				resizeMode = ResizeMode.TOP_EDGE
+			else if (bottomDist <= MOUSE_BOUNDS_THRESHOLD)
+				resizeMode = ResizeMode.BOTTOM_EDGE
+	
+		}
 
 		return resizeMode
 	}
 
-	updateCanvasCursorStyle = (resizeMode?: ResizeMode, boundaryUnderMouse?: BoundaryMouseInfo) => {
+	updateCanvasCursorStyle = (resizeMode?: ResizeMode, bUnder?: Boundary) => {
 		const canvas = this.state.canvasRef.current
 		if (!canvas)
 			return
 
 		switch (resizeMode) {
+			// Single boundary
 			case ResizeMode.TOP_LEFT_CORNER: 		canvas.style.cursor = 'nw-resize'; 	break;
 			case ResizeMode.TOP_RIGHT_CORNER:		canvas.style.cursor = 'ne-resize'; 	break;
 			case ResizeMode.BOTTOM_RIGHT_CORNER:	canvas.style.cursor = 'se-resize'; 	break;
@@ -367,10 +386,16 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 			case ResizeMode.RIGHT_EDGE:				canvas.style.cursor = 'e-resize'; 	break;
 			case ResizeMode.TOP_EDGE:				canvas.style.cursor = 'n-resize'; 	break;
 			case ResizeMode.BOTTOM_EDGE:			canvas.style.cursor = 's-resize'; 	break;
+
+			// Multi boundary
+			case ResizeMode.CROSS_SPLIT:			canvas.style.cursor = 'move'; 		break;
+			case ResizeMode.HORIZONTAL_SPLIT:		canvas.style.cursor = 'ns-resize';	break;
+			case ResizeMode.VERTICAL_SPLIT:			canvas.style.cursor = 'ew-resize';	break;
+			
 			default:			
-				if (boundaryUnderMouse && this.state.clickedBoundary)
+				if (bUnder && this.state.clickedBoundary)
 					canvas.style.cursor = 'grabbing';
-				else if (boundaryUnderMouse)
+				else if (bUnder)
 					canvas.style.cursor = 'grab';
 				else					
 					canvas.style.cursor = 'crosshair';
@@ -398,26 +423,37 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 			}
 
 			case MouseMode.BOUNDARY_EDIT: {
-				const boundary = this.boundaryUnderMouse()
-				if (!boundary)
+				const bUnder = this.boundaryUnderMouse()
+				const bNear = this.boundariesNearMouse()
+
+				if (!bUnder && !bNear.length)
 					break
 
 				// Left-click: check & prepare for resize
 				let resizeMode = ResizeMode.NONE
 				if (event.button === 0) {
-					resizeMode = this.checkResizeMode(boundary.bounds)
-					this.updateCanvasCursorStyle(resizeMode, boundary)
+					resizeMode = this.checkResizeMode(bUnder, bNear)
+					this.updateCanvasCursorStyle(resizeMode, bUnder)
 				}
 
-				// Mouse button went down over a boundary
-				this.setState({
-					clickedBoundary: boundary,
-					resizeOldBounds: {
-						min: Object.assign({}, boundary.bounds.min),
-						max: Object.assign({}, boundary.bounds.max)
-					},
-					resizeMode: resizeMode
-				})
+				// Mouse button went down near 2 or 4 adjacent boundaries
+				if (bNear.length > 1) {
+					this.setState({
+						resizeBoundaries: bNear,
+						resizeMode: resizeMode
+					})
+				}
+				// Mouse button went down over a single boundary
+				else if (bUnder) {
+					this.setState({
+						clickedBoundary: bUnder,
+						clickedOldBounds: {
+							min: Object.assign({}, bUnder.bounds.min),
+							max: Object.assign({}, bUnder.bounds.max)
+						},
+						resizeMode: resizeMode
+					})
+				}
 
 				break
 			}
@@ -482,14 +518,14 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 				if (this.state.resizeMode !== ResizeMode.NONE) {
 					this.setState({
 						resizeMode: ResizeMode.NONE,
-						resizeOldBounds: undefined
+						resizeBoundaries: undefined
 					})
 					break
 				}
 
 				// Did we right-click on an existing boundary? Delete it and bail out
 				if (this.props.onBoundaryDeleted && event.button === 2 && click && this.state.clickedBoundary) {
-					this.props.onBoundaryDeleted(this.state.clickedBoundary.index)
+					this.props.onBoundaryDeleted(this.state.clickedBoundary)
 					break
 				}
 
@@ -507,10 +543,15 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 			mouseButton: undefined,
 			mouseDownPos: undefined,
 			mouseDownPosCanvas: undefined,
-			clickedBoundary: undefined
+			clickedBoundary: undefined,
+			clickedOldBounds: undefined
 		})
 
 		this.updateCanvasCursorStyle(undefined, this.boundaryUnderMouse())
+	}
+
+	resizingMultiple = (b: Bounds | Array<Bounds>): b is Array<Bounds> => {
+		return (b as Array<Bounds>).length !== undefined
 	}
 
 	onMouseMove = (event: React.MouseEvent<HTMLCanvasElement>) => {
@@ -519,7 +560,7 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 
 		const mousePos = this.getMousePos()
 
-		// Right click always pans
+		// Right mouse button drag always pans
 		if (this.state.mouseButton === 2) {
 			if (!this.state.mouseDownPos || this.state.draggingBody)
 				return
@@ -539,87 +580,174 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 			return
 		}
 
-		// Left click actions
+		// Left mouse buttton drag actions
 		switch (this.props.mouseMode) {
 			case MouseMode.BOUNDARY_EDIT: {
 				// Not resizing or moving
 				if (this.state.resizeMode === ResizeMode.NONE && !this.state.clickedBoundary) {
-					// Just look for a boundary under the mouse and update the cursor
-					const boundary = this.boundaryUnderMouse()
-					if (boundary)
-						this.updateCanvasCursorStyle(this.checkResizeMode(boundary.bounds), boundary)
-					else
-						this.updateCanvasCursorStyle(undefined)
+					// Just look for boundaries near the mouse and update the cursor
+					const bUnder = this.boundaryUnderMouse()
+					const bNear = this.boundariesNearMouse()
+					this.updateCanvasCursorStyle(this.checkResizeMode(bUnder, bNear))
 					break
 				}
 
-				// Bail out if we don't have a callback or a clicked boundary
-				if (!this.props.onBoundaryUpdated || !this.state.clickedBoundary || !this.state.resizeOldBounds)
+				// Bail out if we don't have a callback
+				if (!this.props.onBoundaryUpdated)
 					break
 
-				let newBounds = {
-					min: Object.assign({}, this.state.resizeOldBounds.min),
-					max: Object.assign({}, this.state.resizeOldBounds.max)
-				}
+				if (this.state.resizeBoundaries) {
+					switch (this.state.resizeMode) {
+						case ResizeMode.CROSS_SPLIT: {
+							this.state.resizeBoundaries.forEach((b) => {
+								const bounds = b.bounds
 
-				switch (this.state.resizeMode) {
-					case ResizeMode.TOP_LEFT_CORNER:
-						newBounds.min.x = mousePos.x
-						newBounds.min.y = mousePos.y
-						break
+								let newBounds = {
+									min: Object.assign({}, bounds.min),
+									max: Object.assign({}, bounds.max)
+								}
 
-					case ResizeMode.TOP_RIGHT_CORNER:
-						newBounds.max.x = mousePos.x
-						newBounds.min.y = mousePos.y
-						break
+								// Find the closest corner to the mouse
+								const dists = [
+									distanceSq(mousePos, bounds.min),							// Top left
+									distanceSq(mousePos, { x: bounds.max.x, y: bounds.min.y }),	// Top right
+									distanceSq(mousePos, bounds.max),							// Bottom right
+									distanceSq(mousePos, { x: bounds.min.x, y: bounds.max.y }),	// Bottom left
+								]
+								const minIndex = dists.reduce((minIndex, dist, i, dists) => dist < dists[minIndex] ? i : minIndex, 0)
 
-					case ResizeMode.BOTTOM_LEFT_CORNER:
-						newBounds.min.x = mousePos.x
-						newBounds.max.y = mousePos.y
-						break
+								// Adjust the closest corner
+								switch (minIndex) {
+									// Top left
+									case 0:
+										newBounds.min.x = mousePos.x
+										newBounds.min.y = mousePos.y
+										break
+									
+									// Top right
+									case 1:
+										newBounds.max.x = mousePos.x
+										newBounds.min.y = mousePos.y
+										break
 
-					case ResizeMode.BOTTOM_RIGHT_CORNER:
-						newBounds.max.x = mousePos.x
-						newBounds.max.y = mousePos.y
-						break
+									//  Bottom right
+									case 2:
+										newBounds.max.x = mousePos.x
+										newBounds.max.y = mousePos.y
+										break
 
-					case ResizeMode.LEFT_EDGE:
-						newBounds.min.x = mousePos.x
-						break
+									// Bottom left
+									case 3:
+										newBounds.min.x = mousePos.x
+										newBounds.max.y = mousePos.y
+										break
 
-					case ResizeMode.RIGHT_EDGE:
-						newBounds.max.x = mousePos.x
-						break
-					
-					case ResizeMode.TOP_EDGE:
-						newBounds.min.y = mousePos.y
-						break
+									default:
+										break
+								}
 
-					case ResizeMode.BOTTOM_EDGE:
-						newBounds.max.y = mousePos.y
-						break
-					
-					default:
-						// Moving
-						if (!this.state.mouseDownPos)
+								// Fixup so that min is always at the top left and max is always at the bottom right
+								newBounds = createBounds(newBounds.min, newBounds.max)
+
+								// Update boundary, skipping validation checks because we update one at a time
+								this.props.onBoundaryUpdated(b, newBounds, false)
+							})
+
 							break
-						const mouseDelta = Matter.Vector.sub(mousePos, this.state.mouseDownPos)
-						newBounds.min = Matter.Vector.add(newBounds.min, mouseDelta)
-						newBounds.max = Matter.Vector.add(newBounds.max, mouseDelta)
-						break
+						}
+
+						case ResizeMode.HORIZONTAL_SPLIT:
+						case ResizeMode.VERTICAL_SPLIT:
+							var b1 = this.state.resizeBoundaries[0]
+							var b2 = this.state.resizeBoundaries[1]
+
+							var newBounds1
+							var newBounds2
+
+							if (this.state.resizeMode === ResizeMode.HORIZONTAL_SPLIT) {
+								// Swap boundary order if necessary
+								if (b1.bounds.max.y > b2.bounds.min.y)
+									[b1, b2] = [b2, b1]
+								newBounds1 = createBounds(b1.bounds.min, { x: b1.bounds.max.x, y: mousePos.y })
+								newBounds2 = createBounds({ x: b2.bounds.min.x, y: mousePos.y }, b2.bounds.max)
+							} else {
+								if (b1.bounds.max.x > b2.bounds.min.x)
+									[b1, b2] = [b2, b1]
+								newBounds1 = createBounds(b1.bounds.min, { x: mousePos.x, y: b1.bounds.max.y })
+								newBounds2 = createBounds({ x: mousePos.x, y: b2.bounds.min.y }, b2.bounds.max)
+							}
+
+							// Update boundary, skipping validation checks because we update one at a time
+							this.props.onBoundaryUpdated(b1, newBounds1, false)
+							this.props.onBoundaryUpdated(b2, newBounds2, false)
+
+							break
+					}
+				} else if (this.state.clickedBoundary && this.state.clickedOldBounds) {
+					let newBounds = {
+						min: Object.assign({}, this.state.clickedOldBounds.min),
+						max: Object.assign({}, this.state.clickedOldBounds.max)
+					}
+	
+					switch (this.state.resizeMode) {
+						case ResizeMode.TOP_LEFT_CORNER:
+							newBounds.min.x = mousePos.x
+							newBounds.min.y = mousePos.y
+							break
+	
+						case ResizeMode.TOP_RIGHT_CORNER:
+							newBounds.max.x = mousePos.x
+							newBounds.min.y = mousePos.y
+							break
+	
+						case ResizeMode.BOTTOM_LEFT_CORNER:
+							newBounds.min.x = mousePos.x
+							newBounds.max.y = mousePos.y
+							break
+	
+						case ResizeMode.BOTTOM_RIGHT_CORNER:
+							newBounds.max.x = mousePos.x
+							newBounds.max.y = mousePos.y
+							break
+	
+						case ResizeMode.LEFT_EDGE:
+							newBounds.min.x = mousePos.x
+							break
+	
+						case ResizeMode.RIGHT_EDGE:
+							newBounds.max.x = mousePos.x
+							break
+						
+						case ResizeMode.TOP_EDGE:
+							newBounds.min.y = mousePos.y
+							break
+	
+						case ResizeMode.BOTTOM_EDGE:
+							newBounds.max.y = mousePos.y
+							break
+						
+						default:
+							// Moving
+							if (!this.state.mouseDownPos)
+								break
+							const mouseDelta = Matter.Vector.sub(mousePos, this.state.mouseDownPos)
+							newBounds.min = Matter.Vector.add(newBounds.min, mouseDelta)
+							newBounds.max = Matter.Vector.add(newBounds.max, mouseDelta)
+							break
+					}
+	
+					// Fixup so that min is always at the top left and max is always at the bottom right
+					newBounds = createBounds(newBounds.min, newBounds.max)
+	
+					// Update cursor
+					this.updateCanvasCursorStyle(this.state.resizeMode, this.state.clickedBoundary)
+	
+					// Update boundary
+					this.props.onBoundaryUpdated(this.state.clickedBoundary, newBounds)
+					break
 				}
-
-				// Fixup so that min is always at the top left and max is always at the bottom right
-				newBounds = createBounds(newBounds.min, newBounds.max)
-
-				// Update cursor
-				this.updateCanvasCursorStyle(this.state.resizeMode, this.state.clickedBoundary)
-
-				this.props.onBoundaryUpdated(this.state.clickedBoundary.index, newBounds)
 				break
 			}
-
-			default: break
 		}
 	}
 
@@ -709,18 +837,22 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 		return Matter.Vector.mult(Matter.Vector.sub(position, render.bounds.min), scale)
 	}
 
-	boundaryUnderMouse = (): BoundaryMouseInfo | undefined => {
+	boundaryUnderMouse = (): Boundary | undefined => {
 		if (!this.matterMouse)
 			return undefined
 
-		for (let i = 0; i < this.props.boundaries.length; ++i) {
-			const boundary = this.props.boundaries[i]
-			if (pointInBounds(this.matterMouse.position, boundary.bounds)) {
-				return {index: i, bounds: boundary.bounds} as BoundaryMouseInfo
-			}
-		}
+		const mouse = this.matterMouse
+		return this.props.boundaries.find(b => { return pointInBounds(mouse.position, b.bounds) })
+	}
 
-		return undefined
+	boundariesNearMouse = (): Array<Boundary> => {
+		if (!this.matterMouse)
+			return []
+
+		const mouse = this.matterMouse
+		return this.props.boundaries.filter(b => {
+			return circleOverlapBounds(mouse.position, MOUSE_BOUNDS_THRESHOLD / 2, b.bounds)
+		})
 	}
 
 	bodyAtPosition = (position: Point) => {
