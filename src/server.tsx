@@ -775,11 +775,9 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 		const zoomFactor = event.deltaY < 0 ? 0.9 : 1 / 0.9
 		const bounds = this.matterRender.bounds
 
-		// Reposition viewport
-		bounds.min.x = zoomFactor * (bounds.min.x - mouse.position.x) + mouse.position.x
-		bounds.min.y = zoomFactor * (bounds.min.y - mouse.position.y) + mouse.position.y
-		bounds.max.x = zoomFactor * (bounds.max.x - mouse.position.x) + mouse.position.x
-		bounds.max.y = zoomFactor * (bounds.max.y - mouse.position.y) + mouse.position.y
+		// Reposition viewport (i.e. min = zoomFactor * (min - mousePos) + mousePos)
+		bounds.min = Matter.Vector.add(Matter.Vector.mult(Matter.Vector.sub(bounds.min, mouse.position), zoomFactor), mouse.position)
+		bounds.max = Matter.Vector.add(Matter.Vector.mult(Matter.Vector.sub(bounds.max, mouse.position), zoomFactor), mouse.position)
 	}
 
 	spawnRandomObjects = (count: number) => {
