@@ -1,4 +1,6 @@
-import React from 'react'
+///<reference path="./types/types.d.ts" />
+
+import * as React from 'react'
 
 import MathJax from 'react-mathjax2'
 import Table from 'react-bootstrap/Table'
@@ -16,7 +18,7 @@ then you can calculate the cost of having a boundary in particular place, depend
 there's also the cost of number of objects that are completely out of their host server's region as the islands check has to be performed on them
 */
 
-export const constants = {
+export const constants: Variables = {
     C_m: {
         desc: "Cost of sending and receiving an object migration",
         defaultValue: 1
@@ -39,7 +41,7 @@ export const constants = {
     }
 }
 
-export const globalVars = {
+export const globalVars: Variables = {
     sigma: {
         type: "count",
         desc: "Number of servers"
@@ -54,7 +56,7 @@ export const globalVars = {
     }
 }
 
-export const vars = {
+export const vars: Variables = {
     lambda: {
         type: "proportion",
         desc: "CPU load of the server",
@@ -77,7 +79,14 @@ export const vars = {
     }
 }
 
-export function Variables(props) {
+interface VariablesProps {
+    boundaries: Array<Boundary>,
+    utilConstants: UtilityConstants,
+    utilGlobalVars: UtilityVariables,
+    onUtilConstantUpdated: UtilConstantUpdatedCallback
+}
+
+export const Variables: React.FC<VariablesProps> = (props) => {
     return (
         <div>
             <h5>Constants (click to edit)</h5>
@@ -93,7 +102,7 @@ export function Variables(props) {
                 { Object.keys(props.utilConstants).map((v, i) =>
                     <tr key={i}>
                         <td><MathJax.Node>{v}</MathJax.Node></td>
-                        <ContentEditable html={`${props.utilConstants[v]}`} tagName="td" onChange={ e => props.onUtilConstantUpdated(v, e.target.value.trim()) }/>
+                        <ContentEditable html={`${props.utilConstants[v]}`} tagName="td" onChange={ e => props.onUtilConstantUpdated(v, parseFloat(e.target.value.trim())) }/>
                         <td>{constants[v].desc}</td>
                     </tr>
                 ) }

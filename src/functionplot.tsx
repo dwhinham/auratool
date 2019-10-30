@@ -8,17 +8,17 @@ import memoize from 'memoize-one'
 import { evaluateUtilFunction } from './util'
 
 interface FunctionPlotProps {
-    width: number,
-    height: number,
+    // width: number,
+    // height: number,
     boundaries: Array<Boundary>,
-    utilFunctions: Array<UtilityFunction>,
+    utilFunctions: Array<SubUtilityFunction>,
     utilConstants: UtilityConstants,
     utilGlobalVars: UtilityVariables
 }
 
 interface FunctionPlotState {
-    width: number,
-    height: number,
+    // width: number,
+    // height: number,
     xRange: Array<number>,
     yRange: Array<number>
 }
@@ -28,15 +28,15 @@ export default class FunctionPlot extends React.Component<FunctionPlotProps, Fun
         super(props)
 
         this.state = {
-            width: props.width,
-            height: props.height,
+            //width: props.width,
+            //height: props.height,
             xRange: [0, 1],
             yRange: [0, 1],
         }
     }
 
     // Memoized function returns cached results when arguments are the same as the last call
-    private updateCurves = memoize((funcs: Array<UtilityFunction>, constants, globalVars) => {
+    private updateCurves = memoize((funcs: Array<SubUtilityFunction>, constants, globalVars) => {
         const numSteps = 100
         const stepSize = (this.state.xRange[1] - this.state.xRange[0]) / numSteps
 
@@ -82,7 +82,7 @@ export default class FunctionPlot extends React.Component<FunctionPlotProps, Fun
 
     private updatePoints = memoize((
         boundaries: Array<Boundary>,
-        funcs: Array<UtilityFunction>,
+        funcs: Array<SubUtilityFunction>,
         constants: UtilityConstants,
         globalVars: UtilityVariables) => {
             let datasets = new Array<chartjs.ChartDataSets>()
@@ -124,8 +124,8 @@ export default class FunctionPlot extends React.Component<FunctionPlotProps, Fun
         return (
             <Scatter
                 data={ data }
-                width={ this.state.width }
-                height={ this.state.height }
+                //width={ this.state.width }
+                //height={ this.state.height }
                 options={{
                     maintainAspectRatio: false,
                     animation: {

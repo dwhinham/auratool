@@ -3,7 +3,7 @@
 import * as React from 'react'
 
 import MathJax from 'react-mathjax2'
-import { SketchPicker } from 'react-color'
+import * as ReactColor from 'react-color'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
 import Button from 'react-bootstrap/Button'
@@ -18,25 +18,15 @@ import Tabs from 'react-bootstrap/Tabs'
 import { evaluateServerUtilFunction } from './util'
 import { vars, Variables } from './variables'
 
-type ChangeColorClickedCallback = (index?: number) => {}
-type ColorUpdatedCallback = () => {}
-
-type UtilFuncAddedCallback = () => {}
-type UtilFuncDeletedCallback = (index: number) => {}
-type UtilFuncExpressionUpdatedCallback = (index: number, value: string) => {}
-type ServerUtilFuncExpressionUpdatedCallback = (value: string) => {}
-type UtilFuncVarUpdatedCallback = (index: number, value: string) => {}
-type UtilConstantUpdatedCallback = (index: number, value: number) => {}
-
 interface ControlPanelProps {
 	showColorPicker: boolean,
-	colorIndex: number,
+	colorIndex?: number,
 	onChangeColorClicked: ChangeColorClickedCallback,
 	onColorUpdated: ColorUpdatedCallback,
 
 	boundaries: Array<Boundary>,
 	utilServer: UtilityFunction,
-	utilFunctions: Array<UtilityFunction>,
+	utilFunctions: Array<SubUtilityFunction>,
 	utilConstants: UtilityVariables,
 	utilGlobalVars: UtilityVariables,
 	onUtilFunctionAdded: UtilFuncAddedCallback,
@@ -75,7 +65,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
 
 			<Tab eventKey="functions" title="Functions">
 				<h5>Utility functions</h5>
-				{ props.utilFunctions.map((func: UtilityFunction, i: number) =>
+				{ props.utilFunctions.map((func, i) =>
 					<InputGroup className="mb-1" key={i}>
 						<InputGroup.Prepend>
 							<InputGroup.Text>
@@ -115,8 +105,8 @@ export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
 							{
 								props.showColorPicker && props.colorIndex === i &&
 								<div style={ popover }>
-									<div style={ cover } onClick={ () => props.onChangeColorClicked() }/>
-									<SketchPicker disableAlpha={true} color={func.color} onChange={props.onColorUpdated} />
+									<div style={ cover } onClick={ () => props.onChangeColorClicked(undefined) }/>
+									<ReactColor.SketchPicker disableAlpha={true} color={func.color} onChange={props.onColorUpdated} />
 								</div>
 							}
 

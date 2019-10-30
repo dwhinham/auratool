@@ -1,8 +1,10 @@
+///<reference path="./types/types.d.ts" />
+
 import { cloneDeep } from 'lodash'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import evaluatex from 'evaluatex/dist/evaluatex';
+import evaluatex from 'evaluatex/dist/evaluatex'
 import Matter from 'matter-js'
-import React, { Component } from 'react'
+import * as React from 'react'
 
 import Button from 'react-bootstrap/Button'
 import ButtonToolbar from 'react-bootstrap/ButtonToolbar'
@@ -17,6 +19,7 @@ import { constants } from './variables'
 import ControlPanel from './controlpanel'
 import FunctionPlot from './functionplot'
 import Server, { MouseMode } from './server'
+import * as ReactColor from 'react-color';
 
 const colors = [
 	'#e6194b',
@@ -45,21 +48,48 @@ const colors = [
 
 const A_VERY_BIG_NUMBER = 100000
 
-export default class UtilSim extends Component {
+// FIXME: Matter.Body is missing circleRadius
+interface BodyHack extends Matter.Body {
+	circleRadius: number
+}
+
+interface UtilSimProps {
+
+}
+
+interface UtilSimState {
+
+	showColorPicker: boolean,
+	colorIndex?: number,
+	lastBoundaryMoveTime: number,
+	mouseMode: MouseMode,
+	gridSize: number,
+	snapToGrid: boolean,
+	boundaries: Array<Boundary>,
+	utilFunctions: Array<SubUtilityFunction>,
+	utilConstants: UtilityVariables,
+	utilGlobalVars: UtilityVariables,
+	utilServer: UtilityFunction
+}
+
+export default class UtilSim extends React.Component<UtilSimProps, UtilSimState> {
 	//static whyDidYouRender = true
-	constructor(props) {
+
+	serverRef: React.RefObject<Server>
+	lastFrameTime: number
+	frameTimeHistory: Array<number>
+
+	constructor(props: UtilSimProps) {
 		super(props)
 
+		const defaultConstantValues: UtilityVariables = {} 
+		Object.keys(constants).forEach((key) => defaultConstantValues[key] = constants[key].defaultValue as number)
+
 		this.serverRef = React.createRef()
-
-		const defaultConstantValues = {}
-		Object.keys(constants).forEach(key => defaultConstantValues[key] = constants[key].defaultValue)
-
+		this.lastFrameTime = 0
 		this.frameTimeHistory = new Array(10)
 
 		this.state = {
-			x: 0,
-			y: 0,
 			showColorPicker: false,
 			colorIndex: 0,
 			lastBoundaryMoveTime: window.performance.now(),
@@ -120,13 +150,13 @@ export default class UtilSim extends Component {
 		// Try to compile the functions
 		this.state.utilFunctions.forEach((func, i) => this.onUtilFunctionUpdated(i, func.expression))
 		this.onServerUtilFunctionUpdated(this.state.utilServer.expression)
-			}
+	}
 
-	onEngineBeforeUpdate = event => {
+	onEngineBeforeUpdate = (event: Matter.IEventTimestamped<Matter.Engine>) => {
 		this.lastFrameTime = window.performance.now()
 	}
 
-	onEngineAfterUpdate = event => {
+	onEngineAfterUpdate = (event: Matter.IEventTimestamped<Matter.Engine>) => {
 		// Update timing metrics
 		const now = window.performance.now()
 		const delta = (now - this.lastFrameTime)
@@ -160,7 +190,7 @@ export default class UtilSim extends Component {
 					++numActive
 
 				// Is the object near any of the boundary edges?
-				if (pointNearBounds(body.position, body.circleRadius, b.bounds))
+				if (pointNearBounds(body.position, (body as BodyHack).circleRadius, b.bounds))
 					++numNearBoundary
 
 				// Make object same colour as boundary that contains it
@@ -193,7 +223,7 @@ export default class UtilSim extends Component {
 	}
 	
 	// Validate the bounds
-	validateBoundary = (bounds, boundaryToIgnore = undefined) => {
+	validateBoundary = (bounds: Bounds, boundaryToIgnore?: Boundary) => {
 		// Reject min == max
 		if (bounds.min.x === bounds.max.x || bounds.min.y === bounds.max.y)
 			return false
@@ -209,7 +239,7 @@ export default class UtilSim extends Component {
 		})
 	}
 
-	onBoundaryAdded = bounds => {
+	onBoundaryAdded = (bounds: Bounds) => {
 		if (!this.validateBoundary(bounds))
 			return
 
@@ -222,7 +252,7 @@ export default class UtilSim extends Component {
 		this.setState({ boundaries, lastBoundaryMoveTime: window.performance.now() })
 	}
 
-	onBoundaryDeleted = boundary => {
+	onBoundaryDeleted = (boundary: Boundary) => {
 		const index = this.state.boundaries.findIndex(b => b === boundary)
 		if (index === -1)
 			return
@@ -232,7 +262,7 @@ export default class UtilSim extends Component {
 		this.setState({ boundaries, lastBoundaryMoveTime: window.performance.now() })
 	}
 
-	onBoundaryUpdated = (boundary, bounds, validate = true) => {
+	onBoundaryUpdated = (boundary: Boundary, bounds: Bounds, validate: boolean = true) => {
 		if (validate && !this.validateBoundary(bounds, boundary))
 			return
 
@@ -250,7 +280,7 @@ export default class UtilSim extends Component {
 		this.setState({ boundaries, lastBoundaryMoveTime: window.performance.now() })
 	}
 
-	onUtilFunctionUpdated = (index, value) => {
+	onUtilFunctionUpdated = (index: number, value: string) => {
 		const utilFunctions = this.state.utilFunctions.slice()
 		utilFunctions[index].expression = value
 
@@ -264,7 +294,7 @@ export default class UtilSim extends Component {
 		this.setState({ utilFunctions })
 	}
 
-	onServerUtilFunctionUpdated = value => {
+	onServerUtilFunctionUpdated = (value: string) => {
 		const utilServer = cloneDeep(this.state.utilServer)
 		utilServer.expression = value
 
@@ -278,15 +308,15 @@ export default class UtilSim extends Component {
 		this.setState({ utilServer })
 	}
 
-	onUtilConstantUpdated = (key, value) => {
+	onUtilConstantUpdated = (key: string, value: number) => {
 		const utilConstants = cloneDeep(this.state.utilConstants)
 		utilConstants[key] = value
 		this.setState({ utilConstants })
 	}
 
-	onUtilVarUpdated = (index, utilVar) => {
+	onUtilVarUpdated = (index: number, value: string) => {
 		let utilFunctions = this.state.utilFunctions.slice()
-		utilFunctions[index].utilVar = utilVar
+		utilFunctions[index].utilVar = value
 		this.setState({ utilFunctions })
 	}
 
@@ -300,38 +330,46 @@ export default class UtilSim extends Component {
 		this.setState({ utilFunctions })
 	}
 
-	onUtilFunctionDeleted = index => {
+	onUtilFunctionDeleted = (index: number) => {
 		let utilFunctions = this.state.utilFunctions.slice()
 		utilFunctions.splice(index, 1)
 		this.setState({ utilFunctions })
 	}
 
-	onChangeColorClicked = index => {
+	onChangeColorClicked = (index?: number) => {
 		this.setState({
 			showColorPicker: !this.state.showColorPicker,
-			colorIndex: !this.state.showColorPicker ? index : null
+			colorIndex: !this.state.showColorPicker ? index : undefined
 		})
 	}
 
-	onColorUpdated = color => {
+	onColorUpdated = (color: ReactColor.ColorResult) => {
 		let utilFunctions = this.state.utilFunctions.slice()
-		utilFunctions[this.state.colorIndex].color = color.hex
+		utilFunctions[this.state.colorIndex as number].color = color.hex
 		this.setState({ utilFunctions })
 	}
 
 	onRandomClicked = () => {
+		if (!this.serverRef.current)
+			return;
 		this.serverRef.current.spawnRandomObjects(100)
 	}
 
 	onClearClicked = () => {
+		if (!this.serverRef.current)
+			return;
 		this.serverRef.current.clearAllObjects()
 	}
 
 	onHomeClicked = () => {
+		if (!this.serverRef.current)
+			return;
 		this.serverRef.current.resetView()
 	}
 
 	onShowAllObjectsClicked = () => {
+		if (!this.serverRef.current)
+			return;
 		this.serverRef.current.showAllObjects()
 	}
 
@@ -418,7 +456,6 @@ export default class UtilSim extends Component {
 							<ControlPanel
 								// Physics state
 								boundaries={this.state.boundaries}
-								objects={this.serverRef.current ? this.serverRef.current.matterEngine.world.bodies : null}
 
 								// Utility state
 								utilFunctions={this.state.utilFunctions}

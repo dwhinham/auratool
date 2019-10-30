@@ -57,7 +57,15 @@ export const pointNearBounds = (p: Point, r: number, b: Bounds) => {
             p.y + r > b.max.y
 }
 
-export const evaluateUtilFunction = (func: UtilityFunction, boundary: Boundary, constants: UtilityVariables, globalVars: UtilityVariables) => {
+export const resizeBounds2WaySplit = (boundaries: Array<Boundary>, mousePos: Point, vertical: boolean) => {
+
+}
+
+export const resizeBounds4WaySplit = (boundaries: Array<Boundary>, mousePos: Point) => {
+
+}
+
+export const evaluateUtilFunction = (func: SubUtilityFunction, boundary: Boundary, constants: UtilityVariables, globalVars: UtilityVariables) => {
     try {
         return func.evalFunc({
             [func.utilVar]: boundary.vars[func.utilVar],
@@ -71,7 +79,7 @@ export const evaluateUtilFunction = (func: UtilityFunction, boundary: Boundary, 
     }
 }
 
-export const evaluateServerUtilFunction = (serverUtilFunc: UtilityFunction, utilFuncs: Array<UtilityFunction>, boundary: Boundary, constants: UtilityVariables, globalVars: UtilityVariables) => {
+export const evaluateServerUtilFunction = (serverUtilFunc: UtilityFunction, utilFuncs: Array<SubUtilityFunction>, boundary: Boundary, constants: UtilityVariables, globalVars: UtilityVariables) => {
     if (!serverUtilFunc.evalFunc)
         return 0
 

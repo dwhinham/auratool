@@ -37,15 +37,15 @@ interface ServerProps {
 	snapToGrid: boolean,
 	gridSize: number,
 
-	onEngineBeforeUpdate: () => {},
-	onEngineAfterUpdate: () => {},
+	onEngineBeforeUpdate?: (event: Matter.IEventTimestamped<Matter.Engine>) => void,
+	onEngineAfterUpdate?: (event: Matter.IEventTimestamped<Matter.Engine>) => void,
 
-	onObjectAdded: (body: Matter.Body) => {},
-	onObjectDeleted: (id: number) => {},
+	onObjectAdded?: ObjectAddedCallback,
+	onObjectDeleted?: ObjectDeletedCallback,
 
-	onBoundaryAdded: (bounds: Bounds) => {}
-	onBoundaryUpdated: (boundary: Boundary, newBounds: Bounds, validate?: boolean) => {}
-	onBoundaryDeleted: (boundary: Boundary) => {}
+	onBoundaryAdded?: BoundaryAddedCallback,
+	onBoundaryUpdated?: BoundaryUpdatedCallback,
+	onBoundaryDeleted?: BoundaryDeletedCallback
 }
 
 interface ServerState {
@@ -199,8 +199,10 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 
 		// Engine/runner hooks
 		Matter.Events.on(this.matterEngine, 'beforeUpdate', this.onBeforeUpdate)
-		Matter.Events.on(this.matterEngine, 'beforeUpdate', this.props.onEngineBeforeUpdate)
-		Matter.Events.on(this.matterEngine, 'afterUpdate', this.props.onEngineAfterUpdate)
+		if (this.props.onEngineBeforeUpdate)
+			Matter.Events.on(this.matterEngine, 'beforeUpdate', this.props.onEngineBeforeUpdate)
+		if (this.props.onEngineAfterUpdate)
+			Matter.Events.on(this.matterEngine, 'afterUpdate', this.props.onEngineAfterUpdate)
 
 		// Renderer hooks
 		Matter.Events.on(this.matterRender, 'beforeRender', this.onBeforeRender)
@@ -650,7 +652,8 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 								newBounds = createBounds(newBounds.min, newBounds.max)
 
 								// Update boundary, skipping validation checks because we update one at a time
-								this.props.onBoundaryUpdated(b, newBounds, false)
+								if (this.props.onBoundaryUpdated)
+									this.props.onBoundaryUpdated(b, newBounds, false)
 							})
 
 							break
