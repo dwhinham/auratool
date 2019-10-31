@@ -44,7 +44,7 @@ interface ServerProps {
 	onObjectDeleted?: ObjectDeletedCallback,
 
 	onBoundaryAdded?: BoundaryAddedCallback,
-	onBoundaryUpdated?: BoundaryUpdatedCallback,
+	onBoundariesUpdated?: BoundariesUpdatedCallback,
 	onBoundaryDeleted?: BoundaryDeletedCallback
 }
 
@@ -595,13 +595,13 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 				}
 
 				// Bail out if we don't have a callback
-				if (!this.props.onBoundaryUpdated)
+				if (!this.props.onBoundariesUpdated)
 					break
 
 				if (this.state.resizeBoundaries) {
 					switch (this.state.resizeMode) {
 						case ResizeMode.CROSS_SPLIT: {
-							this.state.resizeBoundaries.forEach((b) => {
+							const resizeInfo: Array<BoundaryResizeInfo> = this.state.resizeBoundaries.map((b) => {
 								const bounds = b.bounds
 
 								let newBounds = {
@@ -632,7 +632,7 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 										newBounds.min.y = mousePos.y
 										break
 
-									//  Bottom right
+									// Bottom right
 									case 2:
 										newBounds.max.x = mousePos.x
 										newBounds.max.y = mousePos.y
@@ -649,12 +649,13 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 								}
 
 								// Fixup so that min is always at the top left and max is always at the bottom right
-								newBounds = createBounds(newBounds.min, newBounds.max)
-
-								// Update boundary, skipping validation checks because we update one at a time
-								if (this.props.onBoundaryUpdated)
-									this.props.onBoundaryUpdated(b, newBounds, false)
+								return {
+									boundary: b,
+									newBounds: createBounds(newBounds.min, newBounds.max)
+								}
 							})
+
+							this.props.onBoundariesUpdated(resizeInfo)
 
 							break
 						}
@@ -680,9 +681,11 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 								newBounds2 = createBounds({ x: mousePos.x, y: b2.bounds.min.y }, b2.bounds.max)
 							}
 
-							// Update boundary, skipping validation checks because we update one at a time
-							this.props.onBoundaryUpdated(b1, newBounds1, false)
-							this.props.onBoundaryUpdated(b2, newBounds2, false)
+							// Update boundaries
+							this.props.onBoundariesUpdated([
+								{ boundary: b1, newBounds: newBounds1 },
+								{ boundary: b2, newBounds: newBounds2 },
+							])
 
 							break
 					}
@@ -746,7 +749,9 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 					this.updateCanvasCursorStyle(this.state.resizeMode, this.state.clickedBoundary)
 	
 					// Update boundary
-					this.props.onBoundaryUpdated(this.state.clickedBoundary, newBounds)
+					this.props.onBoundariesUpdated([
+						{ boundary: this.state.clickedBoundary, newBounds: newBounds }
+					])
 					break
 				}
 				break

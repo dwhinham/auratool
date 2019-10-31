@@ -223,6 +223,30 @@ export default class UtilSim extends React.Component<UtilSimProps, UtilSimState>
 	}
 	
 	// Validate the bounds
+	validateResize = (resizeInfo: Array<BoundaryResizeInfo>) => {
+		// Get the boundaries not being updated
+		var notBeingUpdated: Bounds[] = []
+		this.state.boundaries.forEach(b => {
+			if (!resizeInfo.some(r => r.boundary === b))
+				notBeingUpdated.push(b.bounds)
+		})
+
+		return resizeInfo.every(info => {
+			const bounds = info.newBounds
+
+		// Reject min == max
+		if (bounds.min.x === bounds.max.x || bounds.min.y === bounds.max.y)
+			return false
+
+			// Combine check list with boundaries being updated
+			const checkList = [...notBeingUpdated]
+			resizeInfo.forEach(r => (r !== info) && checkList.push(r.newBounds))
+
+			// Reject overlapping boundaries
+			return !checkList.some(b => boundsOverlap(bounds, b))
+		})
+	}
+
 	validateBoundary = (bounds: Bounds, boundaryToIgnore?: Boundary) => {
 		// Reject min == max
 		if (bounds.min.x === bounds.max.x || bounds.min.y === bounds.max.y)
@@ -262,22 +286,29 @@ export default class UtilSim extends React.Component<UtilSimProps, UtilSimState>
 		this.setState({ boundaries, lastBoundaryMoveTime: window.performance.now() })
 	}
 
-	onBoundaryUpdated = (boundary: Boundary, bounds: Bounds, validate: boolean = true) => {
-		if (validate && !this.validateBoundary(bounds, boundary))
-			return
-
-		const index = this.state.boundaries.findIndex(b => b === boundary)
-		if (index === -1)
+	onBoundariesUpdated = (resizeInfo: Array<BoundaryResizeInfo>, validate: boolean = true) => {
+		if (validate && !this.validateResize(resizeInfo))
 			return
 
 		const boundaries = this.state.boundaries.slice()
+		resizeInfo.forEach(info => {
+			// Find the right boundary object to to update
+			for (let i = 0; i < boundaries.length; ++i) {
+				if (info.boundary === boundaries[i]) {
+					const oldBounds = boundaries[i].bounds
+					oldBounds.min.x = info.newBounds.min.x
+					oldBounds.min.y = info.newBounds.min.y
+					oldBounds.max.x = info.newBounds.max.x
+					oldBounds.max.y = info.newBounds.max.y
+					break
+				}
+			}
+		})
 
-		const oldBounds = boundaries[index].bounds
-		oldBounds.min.x = bounds.min.x
-		oldBounds.min.y = bounds.min.y
-		oldBounds.max.x = bounds.max.x
-		oldBounds.max.y = bounds.max.y
-		this.setState({ boundaries, lastBoundaryMoveTime: window.performance.now() })
+		this.setState({
+			boundaries,
+			lastBoundaryMoveTime: window.performance.now()
+		})
 	}
 
 	onUtilFunctionUpdated = (index: number, value: string) => {
@@ -435,7 +466,7 @@ export default class UtilSim extends React.Component<UtilSimProps, UtilSimState>
 
 										// Callbacks
 										onBoundaryAdded={this.onBoundaryAdded}
-										onBoundaryUpdated={this.onBoundaryUpdated}
+										onBoundariesUpdated={this.onBoundariesUpdated}
 										onBoundaryDeleted={this.onBoundaryDeleted}
 
 										onEngineBeforeUpdate={this.onEngineBeforeUpdate}

@@ -16,6 +16,11 @@ interface Boundary {
     color: string,
 }
 
+interface BoundaryResizeInfo {
+    boundary: Boundary,
+    newBounds: Bounds
+}
+
 interface UtilityConstants {
     [propname: string]: number
 }
@@ -58,5 +63,5 @@ type UtilConstantUpdatedCallback = (string: key, value: number) => void
 type ObjectAddedCallback = (body: Matter.Body) => void
 type ObjectDeletedCallback = (id: number) => void
 type BoundaryAddedCallback = (bounds: Bounds) => void
-type BoundaryUpdatedCallback = (boundary: Boundary, newBounds: Bounds, validate?: boolean) => void
+type BoundariesUpdatedCallback = (boundaries: Array<BoundaryResizeInfo>, validate?: boolean) => void
 type BoundaryDeletedCallback = (boundary: Boundary) => void
