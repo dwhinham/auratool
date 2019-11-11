@@ -48,11 +48,6 @@ const colors = [
 
 const A_VERY_BIG_NUMBER = 100000
 
-// FIXME: Matter.Body is missing circleRadius
-interface BodyHack extends Matter.Body {
-	circleRadius: number
-}
-
 interface UtilSimProps {
 
 }
@@ -189,7 +184,7 @@ export default class UtilSim extends React.Component<UtilSimProps, UtilSimState>
 					++numActive
 
 				// Is the object near any of the boundary edges?
-				if (pointNearBounds(body.position, (body as BodyHack).circleRadius, b.bounds))
+				if (pointNearBounds(body.position, body.circleRadius as number, b.bounds))
 					++numNearBoundary
 
 				// Make object same colour as boundary that contains it
