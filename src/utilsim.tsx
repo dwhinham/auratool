@@ -58,7 +58,6 @@ interface UtilSimProps {
 }
 
 interface UtilSimState {
-
 	showColorPicker: boolean,
 	colorIndex?: number,
 	lastBoundaryMoveTime: number,
@@ -82,7 +81,7 @@ export default class UtilSim extends React.Component<UtilSimProps, UtilSimState>
 	constructor(props: UtilSimProps) {
 		super(props)
 
-		const defaultConstantValues: UtilityVariables = {} 
+		const defaultConstantValues: UtilityVariables = {}
 		Object.keys(constants).forEach((key) => defaultConstantValues[key] = constants[key].defaultValue as number)
 
 		this.serverRef = React.createRef()
@@ -204,7 +203,7 @@ export default class UtilSim extends React.Component<UtilSimProps, UtilSimState>
 			b.vars.lambda = (numObjects ? Math.min(1.0, numActive / totalObjects) : 0) + Math.random() * 0.1
 			b.vars.delta = avgFrameTime
 			b.vars.alpha = numObjects ? numActive / numObjects : 0
-			b.vars.beta = numObjects ? numNearBoundary / numObjects : 0 
+			b.vars.beta = numObjects ? numNearBoundary / numObjects : 0
 			b.vars.n = numObjects
 		})
 
@@ -218,10 +217,10 @@ export default class UtilSim extends React.Component<UtilSimProps, UtilSimState>
 			t: timeSinceBoundaryMoved,
 			N: totalObjects
 		}
-					
+
 		this.setState({ boundaries, utilGlobalVars })
 	}
-	
+
 	// Validate the bounds
 	validateResize = (resizeInfo: Array<BoundaryResizeInfo>) => {
 		// Get the boundaries not being updated

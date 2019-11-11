@@ -52,7 +52,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
 		left: '0px',
 	}
 
-	const serverUtilValues = props.boundaries.map(b => 
+	const serverUtilValues = props.boundaries.map(b =>
 		evaluateServerUtilFunction(props.utilServer, props.utilFunctions, b, props.utilConstants, props.utilGlobalVars)
 	)
 	const globalUtilValue = serverUtilValues.length ? serverUtilValues.reduce((a, b) => a + b).toFixed(2) : 0
@@ -85,7 +85,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
 									<MathJax.Node inline>{func.utilVar}</MathJax.Node>
 								</Dropdown.Toggle>
 
-								<Dropdown.Menu>											
+								<Dropdown.Menu>
 									<Dropdown.Header>Utility variable</Dropdown.Header>
 									<Dropdown.Item onSelect={() => { props.onUtilVarUpdated(i, "x") }}>
 										<MathJax.Node inline>x</MathJax.Node>
@@ -98,7 +98,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
 											</Dropdown.Item>
 										)
 									}
-								</Dropdown.Menu>	
+								</Dropdown.Menu>
 							</Dropdown>
 
 							<Button onClick={() => props.onChangeColorClicked(i)} style={{backgroundColor: func.color}}><FontAwesomeIcon icon="palette"/></Button>

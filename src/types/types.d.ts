@@ -1,52 +1,52 @@
 interface Point {
-    x: number,
-    y: number
+	x: number,
+	y: number
 }
 
 interface Bounds {
-    min: Point,
-    max: Point
+	min: Point,
+	max: Point
 }
 
 interface Boundary {
-    bounds: Bounds,
-    vars: {
-        [propname: string]: number
-    },
-    color: string,
+	bounds: Bounds,
+	vars: {
+		[propname: string]: number
+	},
+	color: string,
 }
 
 interface BoundaryResizeInfo {
-    boundary: Boundary,
-    newBounds: Bounds
+	boundary: Boundary,
+	newBounds: Bounds
 }
 
 interface UtilityConstants {
-    [propname: string]: number
+	[propname: string]: number
 }
 
 interface UtilityVariables {
-    [propname: string]: number
+	[propname: string]: number
 }
 
 interface UtilityFunction {
-    expression: string,
-    evalFunc?: function,
+	expression: string,
+	evalFunc?: function,
 }
 
 interface SubUtilityFunction extends UtilityFunction {
-    utilVar: string,
-    color?: string
+	utilVar: string,
+	color?: string
 }
 
 interface Variable {
-    desc: string,
-    type?: string,
-    defaultValue?: number
+	desc: string,
+	type?: string,
+	defaultValue?: number
 }
 
 interface Variables {
-    [propname: string]: Variable
+	[propname: string]: Variable
 }
 
 // Callbacks
