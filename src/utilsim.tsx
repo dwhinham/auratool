@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import evaluatex from 'evaluatex/dist/evaluatex'
 import Matter from 'matter-js'
 import * as React from 'react'
+import * as ReactColor from 'react-color';
 
 import Button from 'react-bootstrap/Button'
 import ButtonToolbar from 'react-bootstrap/ButtonToolbar'
@@ -19,7 +20,6 @@ import { constants } from './variables'
 import ControlPanel from './controlpanel'
 import FunctionPlot from './functionplot'
 import Server, { MouseMode } from './server'
-import * as ReactColor from 'react-color';
 
 const colors = [
 	'#e6194b',
@@ -48,10 +48,6 @@ const colors = [
 
 const A_VERY_BIG_NUMBER = 100000
 
-interface UtilSimProps {
-
-}
-
 interface UtilSimState {
 	showColorPicker: boolean,
 	colorIndex?: number,
@@ -66,14 +62,14 @@ interface UtilSimState {
 	utilServer: UtilityFunction
 }
 
-export default class UtilSim extends React.Component<UtilSimProps, UtilSimState> {
+export default class UtilSim extends React.Component<{}, UtilSimState> {
 	//static whyDidYouRender = true
 
 	serverRef: React.RefObject<Server>
 	lastFrameTime: number
 	frameTimeHistory: Array<number>
 
-	constructor(props: UtilSimProps) {
+	constructor(props: {}) {
 		super(props)
 
 		const defaultConstantValues: UtilityVariables = {}
@@ -288,14 +284,15 @@ export default class UtilSim extends React.Component<UtilSimProps, UtilSimState>
 		resizeInfo.forEach(info => {
 			// Find the right boundary object to to update
 			for (let i = 0; i < boundaries.length; ++i) {
-				if (info.boundary === boundaries[i]) {
-					const oldBounds = boundaries[i].bounds
-					oldBounds.min.x = info.newBounds.min.x
-					oldBounds.min.y = info.newBounds.min.y
-					oldBounds.max.x = info.newBounds.max.x
-					oldBounds.max.y = info.newBounds.max.y
-					break
-				}
+				if (info.boundary !== boundaries[i])
+					continue
+
+				const oldBounds = boundaries[i].bounds
+				oldBounds.min.x = info.newBounds.min.x
+				oldBounds.min.y = info.newBounds.min.y
+				oldBounds.max.x = info.newBounds.max.x
+				oldBounds.max.y = info.newBounds.max.y
+				break
 			}
 		})
 
@@ -327,7 +324,7 @@ export default class UtilSim extends React.Component<UtilSimProps, UtilSimState>
 		try {
 			utilServer.evalFunc = evaluatex(value, { e: Math.E, pi: Math.PI })
 		} catch {
-			utilServer.evalFunc = null
+			utilServer.evalFunc = undefined
 		}
 
 		this.setState({ utilServer })
