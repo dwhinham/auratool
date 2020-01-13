@@ -1,0 +1,25 @@
+{
+  "files": {
+    "main.css": "/util-proto/static/css/main.90208931.chunk.css",
+    "main.js": "/util-proto/static/js/main.037a6d81.chunk.js",
+    "main.js.map": "/util-proto/static/js/main.037a6d81.chunk.js.map",
+    "runtime-main.js": "/util-proto/static/js/runtime-main.b42936ae.js",
+    "runtime-main.js.map": "/util-proto/static/js/runtime-main.b42936ae.js.map",
+    "static/css/2.903a27b1.chunk.css": "/util-proto/static/css/2.903a27b1.chunk.css",
+    "static/js/2.8b9ad20f.chunk.js": "/util-proto/static/js/2.8b9ad20f.chunk.js",
+    "static/js/2.8b9ad20f.chunk.js.map": "/util-proto/static/js/2.8b9ad20f.chunk.js.map",
+    "index.html": "/util-proto/index.html",
+    "precache-manifest.dd0a85368391a2178e77778723df0552.js": "/util-proto/precache-manifest.dd0a85368391a2178e77778723df0552.js",
+    "service-worker.js": "/util-proto/service-worker.js",
+    "static/css/2.903a27b1.chunk.css.map": "/util-proto/static/css/2.903a27b1.chunk.css.map",
+    "static/css/main.90208931.chunk.css.map": "/util-proto/static/css/main.90208931.chunk.css.map",
+    "static/js/2.8b9ad20f.chunk.js.LICENSE": "/util-proto/static/js/2.8b9ad20f.chunk.js.LICENSE"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.b42936ae.js",
+    "static/css/2.903a27b1.chunk.css",
+    "static/js/2.8b9ad20f.chunk.js",
+    "static/css/main.90208931.chunk.css",
+    "static/js/main.037a6d81.chunk.js"
+  ]
+}
