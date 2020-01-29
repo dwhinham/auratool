@@ -9,7 +9,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import Button from 'react-bootstrap/Button'
 import Dropdown from 'react-bootstrap/Dropdown'
 import FormControl from 'react-bootstrap/FormControl'
-import { FormControlProps } from 'react-bootstrap/FormControl'
 import InputGroup from 'react-bootstrap/InputGroup'
 import Tab from 'react-bootstrap/Tab'
 import Table from 'react-bootstrap/Table'
@@ -76,7 +75,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
 						<FormControl
 							placeholder="Function (in ASCIImath)"
 							aria-label="Function (in ASCIImath)"
-							onChange={ (e: React.FormEvent<FormControlProps & FormControl>) => e.currentTarget.value && props.onUtilFunctionUpdated(i, e.currentTarget.value) }
+							onChange={ (e: React.FormEvent<HTMLInputElement>) => e.currentTarget.value && props.onUtilFunctionUpdated(i, e.currentTarget.value) }
 							value={func.expression}
 						/>
 						<InputGroup.Append>
@@ -129,7 +128,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
 					<FormControl
 						placeholder="Function (in ASCIImath)"
 						aria-label="Function (in ASCIImath)"
-						onChange={ (e: React.FormEvent<FormControlProps & FormControl>) => e.currentTarget.value && props.onServerUtilFunctionUpdated(e.currentTarget.value) }
+						onChange={ (e: React.FormEvent<HTMLInputElement>) => e.currentTarget.value && props.onServerUtilFunctionUpdated(e.currentTarget.value) }
 						value={props.utilServer.expression}
 					/>
 				</InputGroup>

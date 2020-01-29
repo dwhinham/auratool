@@ -121,7 +121,7 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 
 		// Prevent menus on canvas
 		canvas.oncontextmenu = () => false
-		canvas.onselectstart = () => false		
+		canvas.onselectstart = () => false
 
 		// Create a physics world
 		this.matterWorld = Matter.World.create({
@@ -176,19 +176,19 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 				wireframes: false,
 			}
 		})
-		
+
 		Matter.World.add(this.matterWorld, this.matterMouseConstraint)
 
 		// Temp
 		for (let x = 0; x < 9; ++x) {
 			for (let y = 0; y < 9; ++y) {
 				const body = Matter.Bodies.circle(x * 50 - 200, y * 50 - 200, 20, { restitution: 0.5 })
-				Matter.World.add(this.matterWorld, body)		
+				Matter.World.add(this.matterWorld, body)
 			}
 		}
 
 		const body = Matter.Bodies.circle(0, 300, 50, { restitution: 0.5 })
-		Matter.World.add(this.matterWorld, body)	
+		Matter.World.add(this.matterWorld, body)
 
 		// Create runner
 		this.matterRunner = Matter.Runner.create({ isFixed: false })
@@ -218,7 +218,7 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 	onBeforeUpdate = (event: Matter.IEventTimestamped<Matter.Engine>) => {
 		if (!this.matterMouseConstraint)
 			return
-			
+
 		// Should we disable the mouse constraint (grab objects?)
 		if (this.props.mouseMode !== MouseMode.OBJECT)
 			this.matterMouseConstraint.collisionFilter.mask = 0
@@ -300,7 +300,7 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 				context.moveTo(bodyPos.x, bodyPos.y)
 				context.lineTo(mousePos.x, mousePos.y)
 				context.stroke()
-				
+
 				break
 			}
 
@@ -342,12 +342,12 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 				min: this.worldToCanvas(bUnder.bounds.min),
 				max: this.worldToCanvas(bUnder.bounds.max)
 			}
-	
+
 			const leftDist 	= Math.abs(boundsCanvas.min.x - mousePosCanvas.x)
 			const rightDist = Math.abs(boundsCanvas.max.x - mousePosCanvas.x)
 			const topDist = Math.abs(boundsCanvas.min.y - mousePosCanvas.y)
 			const bottomDist = Math.abs(boundsCanvas.max.y - mousePosCanvas.y)
-	
+
 			// Check corners
 			if (leftDist <= MOUSE_BOUNDS_THRESHOLD && topDist <= MOUSE_BOUNDS_THRESHOLD)
 				resizeMode = ResizeMode.TOP_LEFT_CORNER
@@ -357,7 +357,7 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 				resizeMode = ResizeMode.BOTTOM_RIGHT_CORNER
 			else if (leftDist <= MOUSE_BOUNDS_THRESHOLD && bottomDist <= MOUSE_BOUNDS_THRESHOLD)
 				resizeMode = ResizeMode.BOTTOM_LEFT_CORNER
-	
+
 			// Check edges
 			else if (leftDist <= MOUSE_BOUNDS_THRESHOLD)
 				resizeMode = ResizeMode.LEFT_EDGE
@@ -367,7 +367,7 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 				resizeMode = ResizeMode.TOP_EDGE
 			else if (bottomDist <= MOUSE_BOUNDS_THRESHOLD)
 				resizeMode = ResizeMode.BOTTOM_EDGE
-	
+
 		}
 
 		return resizeMode
@@ -393,13 +393,13 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 			case ResizeMode.CROSS_SPLIT:			canvas.style.cursor = 'move'; 		break;
 			case ResizeMode.HORIZONTAL_SPLIT:		canvas.style.cursor = 'ns-resize';	break;
 			case ResizeMode.VERTICAL_SPLIT:			canvas.style.cursor = 'ew-resize';	break;
-			
-			default:			
+
+			default:
 				if (bUnder && this.state.clickedBoundary)
 					canvas.style.cursor = 'grabbing';
 				else if (bUnder)
 					canvas.style.cursor = 'grab';
-				else					
+				else
 					canvas.style.cursor = 'crosshair';
 				break;
 		}
@@ -484,7 +484,7 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 				// Left-click: add new object
 				if (event.button === 0) {
 					const body = Matter.Bodies.circle(mousePos.x, mousePos.y, 20, { restitution: 0.5 })
-				
+
 					Matter.World.add(this.matterWorld, body)
 					if (this.props.onObjectAdded)
 					this.props.onObjectAdded(body)
@@ -625,7 +625,7 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 										newBounds.min.x = mousePos.x
 										newBounds.min.y = mousePos.y
 										break
-									
+
 									// Top right
 									case 1:
 										newBounds.max.x = mousePos.x
@@ -694,44 +694,44 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 						min: Object.assign({}, this.state.clickedOldBounds.min),
 						max: Object.assign({}, this.state.clickedOldBounds.max)
 					}
-	
+
 					switch (this.state.resizeMode) {
 						case ResizeMode.TOP_LEFT_CORNER:
 							newBounds.min.x = mousePos.x
 							newBounds.min.y = mousePos.y
 							break
-	
+
 						case ResizeMode.TOP_RIGHT_CORNER:
 							newBounds.max.x = mousePos.x
 							newBounds.min.y = mousePos.y
 							break
-	
+
 						case ResizeMode.BOTTOM_LEFT_CORNER:
 							newBounds.min.x = mousePos.x
 							newBounds.max.y = mousePos.y
 							break
-	
+
 						case ResizeMode.BOTTOM_RIGHT_CORNER:
 							newBounds.max.x = mousePos.x
 							newBounds.max.y = mousePos.y
 							break
-	
+
 						case ResizeMode.LEFT_EDGE:
 							newBounds.min.x = mousePos.x
 							break
-	
+
 						case ResizeMode.RIGHT_EDGE:
 							newBounds.max.x = mousePos.x
 							break
-						
+
 						case ResizeMode.TOP_EDGE:
 							newBounds.min.y = mousePos.y
 							break
-	
+
 						case ResizeMode.BOTTOM_EDGE:
 							newBounds.max.y = mousePos.y
 							break
-						
+
 						default:
 							// Moving
 							if (!this.state.mouseDownPos)
@@ -741,13 +741,13 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 							newBounds.max = Matter.Vector.add(newBounds.max, mouseDelta)
 							break
 					}
-	
+
 					// Fixup so that min is always at the top left and max is always at the bottom right
 					newBounds = createBounds(newBounds.min, newBounds.max)
-	
+
 					// Update cursor
 					this.updateCanvasCursorStyle(this.state.resizeMode, this.state.clickedBoundary)
-	
+
 					// Update boundary
 					this.props.onBoundariesUpdated([
 						{ boundary: this.state.clickedBoundary, newBounds: newBounds }
@@ -778,7 +778,7 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 	onWheel = (event: React.WheelEvent<HTMLCanvasElement>) => {
 		if (!this.matterMouse || !this.matterRender)
 			return
-		
+
 		const mouse = this.matterMouse
 		const zoomFactor = event.deltaY < 0 ? 0.9 : 1 / 0.9
 		const bounds = this.matterRender.bounds
@@ -791,7 +791,7 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 	spawnRandomObjects = (count: number) => {
 		if (!this.matterRender || !this.matterWorld)
 			return
-	
+
 		let bodies = []
 		for (let i = 0; i < count; ++i) {
 			const x = random(this.matterRender.bounds.min.x, this.matterRender.bounds.max.x, true)

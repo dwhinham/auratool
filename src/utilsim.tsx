@@ -1,24 +1,30 @@
 ///<reference path="./types/types.d.ts" />
 
 import { cloneDeep } from 'lodash'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import evaluatex from 'evaluatex/dist/evaluatex'
+import { saveAs } from 'file-saver'
+import { get, set } from 'local-storage'
 import Matter from 'matter-js'
 import * as React from 'react'
-import * as ReactColor from 'react-color';
+import * as ReactColor from 'react-color'
+import { DndProvider } from 'react-dnd'
+import Backend from 'react-dnd-html5-backend'
 
 import Button from 'react-bootstrap/Button'
 import ButtonToolbar from 'react-bootstrap/ButtonToolbar'
 import ButtonGroup from 'react-bootstrap/ButtonGroup'
-import Col from 'react-bootstrap/Col';
-import Container from 'react-bootstrap/Container';
-import Navbar from 'react-bootstrap/Navbar';
-import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col'
+import Container from 'react-bootstrap/Container'
+import Modal from 'react-bootstrap/Modal'
+import Row from 'react-bootstrap/Row'
 
 import { boundsOverlap, pointInBounds, pointNearBounds } from './util'
 import { constants } from './variables'
 import ControlPanel from './controlpanel'
 import FunctionPlot from './functionplot'
+import ImportDropTarget from './importdroptarget'
+import MainToolbar from './maintoolbar'
 import Server, { MouseMode } from './server'
 
 const colors = [
@@ -49,12 +55,16 @@ const colors = [
 const A_VERY_BIG_NUMBER = 100000
 
 interface UtilSimState {
+	// UI
 	showColorPicker: boolean,
+	showImportModal: boolean,
 	colorIndex?: number,
 	lastBoundaryMoveTime: number,
 	mouseMode: MouseMode,
 	gridSize: number,
 	snapToGrid: boolean,
+
+	// Simulation
 	boundaries: Array<Boundary>,
 	utilFunctions: Array<SubUtilityFunction>,
 	utilConstants: UtilityVariables,
@@ -79,8 +89,17 @@ export default class UtilSim extends React.Component<{}, UtilSimState> {
 		this.lastFrameTime = 0
 		this.frameTimeHistory = new Array(10)
 
+		const localStorageState = get<UtilSimState>('utilSim')
+		if (localStorageState) {
+			console.log('Loading settings from local storage')
+			this.state = localStorageState
+			return
+		}
+
+		console.log('Using default settings')
 		this.state = {
 			showColorPicker: false,
+			showImportModal: false,
 			colorIndex: 0,
 			lastBoundaryMoveTime: window.performance.now(),
 
@@ -395,14 +414,98 @@ export default class UtilSim extends React.Component<{}, UtilSimState> {
 		this.serverRef.current.showAllObjects()
 	}
 
+	onImportClicked = () => {
+		this.setState({ showImportModal: true })
+	}
+
+	onImportModalClosed = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+		this.setState({ showImportModal: false })
+	}
+
+	onExportClicked = () => {
+		let saveObj: ExportData = {
+			simState: {
+				boundaries: this.state.boundaries,
+				utilFunctions: this.state.utilFunctions,
+				utilConstants: this.state.utilConstants,
+				utilGlobalVars: this.state.utilGlobalVars,
+				utilServer: this.state.utilServer
+			}
+		}
+
+		if (this.serverRef.current && this.serverRef.current.matterWorld) {
+			const matterWorld = this.serverRef.current.matterWorld
+			const allBodies = Matter.Composite.allBodies(matterWorld)
+
+			// TODO: Make this object typed
+			const bodies: Array<ExportBody> = allBodies.map(body => { return {
+				inverseMass: body.inverseMass,
+				mass: body.mass,
+				position: body.position,
+				speed: body.speed,
+				velocity: body.velocity,
+				vertices: body.vertices.map(vertex => { return Matter.Vector.create(vertex.x, vertex.y) }),
+			}})
+
+			//set('bodies', bodies)
+			saveObj.bodies = bodies
+		}
+
+		//set('utilSim', this.state)
+		saveAs(new Blob([JSON.stringify(saveObj)]), 'util-sim.json')
+	}
+
+	onFilesSelected = (fileList: FileList) => {
+		const file = fileList[0]
+
+		let reader = new FileReader()
+		reader.readAsBinaryString(file)
+		reader.onloadend = () => {
+			const newState = JSON.parse(reader.result as string) as ExportData
+
+			// Load boundary/function state
+			if (newState.simState)
+				this.setState(newState.simState)
+
+			// Load bodies
+			if (newState.bodies && this.serverRef.current && this.serverRef.current.matterWorld) {
+				const matterWorld = this.serverRef.current.matterWorld
+				newState.bodies.forEach(bodyData => {
+					let body = Matter.Body.create(bodyData)
+
+					// We need to do this so Matter intializes previousPosition so that
+					// velocity is applied properly and the object resumes movement.
+					Matter.Body.setVelocity(body, body.velocity)
+
+					Matter.World.add(matterWorld, body)
+				})
+			}
+		}
+	}
+
 	render() {
 		return (
 			<div>
-				<Navbar bg="dark" variant="dark">
-					<Navbar.Brand href="#home">
-						Aura Projection - Utility Function Simulator
-					</Navbar.Brand>
-				</Navbar>
+				<MainToolbar
+					onImportClickedCallback = { this.onImportClicked }
+					onExportClickedCallback = { this.onExportClicked }
+				/>
+
+				<Modal show={ this.state.showImportModal } onHide={ () => { this.setState({ showImportModal: false }) } }>
+					<Modal.Header closeButton>
+						<Modal.Title>Import data</Modal.Title>
+					</Modal.Header>
+					<Modal.Body>
+						<DndProvider backend={Backend}>
+							<ImportDropTarget onFilesSelected={ this.onFilesSelected } />
+						</DndProvider>
+					</Modal.Body>
+					<Modal.Footer>
+						<Button variant="primary" onClick={ this.onImportModalClosed }>
+							Import
+						</Button>
+					</Modal.Footer>
+				</Modal>
 
 				<Container fluid={true} className="mt-2">
 					<Row>

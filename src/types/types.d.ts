@@ -49,6 +49,28 @@ interface Variables {
 	[propname: string]: Variable
 }
 
+interface ExportState {
+	boundaries: Array<Boundary>,
+	utilFunctions: Array<SubUtilityFunction>,
+	utilConstants: UtilityVariables,
+	utilGlobalVars: UtilityVariables,
+	utilServer: UtilityFunction
+}
+
+interface ExportBody {
+	inverseMass: number,
+	mass: number,
+	position: Matter.Vector,
+	speed: number,
+	velocity: Matter.Vector,
+	vertices: Array<Matter.Vector>
+}
+
+interface ExportData {
+	simState?: ExportState,
+	bodies?: Array<ExportBody>
+}
+
 // Callbacks
 type ChangeColorClickedCallback = (index?: number) => void
 type ColorUpdatedCallback = (color: ReactColor.ColorResult) => void
@@ -65,3 +87,7 @@ type ObjectDeletedCallback = (id: number) => void
 type BoundaryAddedCallback = (bounds: Bounds) => void
 type BoundariesUpdatedCallback = (boundaries: Array<BoundaryResizeInfo>, validate?: boolean) => void
 type BoundaryDeletedCallback = (boundary: Boundary) => void
+
+type ImportClickedCallback = () => void
+type ExportClickedCallback = () => void
+type FilesSelectedCallback = (fileList: FileList) => void
