@@ -10,7 +10,14 @@ interface MainToolbarProps {
 
 export const MainToolbar: React.FC<MainToolbarProps> = (props) => {
 	return <Navbar bg="dark" variant="dark" expand="lg">
-		<Navbar.Brand href="#home">Aura Projection - Utility Function Simulator</Navbar.Brand>
+		<Navbar.Brand href="#home">
+			<img
+				src="logo.svg"
+				width="200"
+				className="d-inline-block align-top"
+				alt="auratool"
+			/>
+		</Navbar.Brand>
 		<Navbar.Toggle aria-controls="responsive-navbar-nav" />
 		<Navbar.Collapse id="responsive-navbar-nav">
 			<Nav className="ml-auto">

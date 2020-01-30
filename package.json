@@ -1,7 +1,7 @@
 {
   "name": "util-proto",
   "version": "0.1.0",
-  "homepage": "https://dwhinham.github.io/util-proto",
+  "homepage": "https://dwhinham.github.io/auratool",
   "private": true,
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^1.2.25",
