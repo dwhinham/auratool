@@ -113,11 +113,11 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 		ctx.font = "12px Arial"
 
 		// Fit canvas to container
-		// TODO: make this dynamic
 		canvas.style.width = "100%"
 		canvas.style.height = "100%"
-		canvas.width  = canvas.offsetWidth
-		canvas.height = canvas.offsetHeight
+
+		// Set up canvas dimensions
+		this.updateCanvasDimensions()
 
 		// Prevent menus on canvas
 		canvas.oncontextmenu = () => false
@@ -229,6 +229,9 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 	onBeforeRender = (event: Matter.IEventTimestamped<Matter.Render>) => {
 		if (!this.matterRender)
 			return
+
+		// Detect canvas resize
+		this.updateCanvasDimensions()
 
 		// Update some rendering options
 		this.matterRender.options.gridSize = this.props.gridSize
@@ -786,6 +789,35 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 		// Reposition viewport (i.e. min = zoomFactor * (min - mousePos) + mousePos)
 		bounds.min = Matter.Vector.add(Matter.Vector.mult(Matter.Vector.sub(bounds.min, mouse.position), zoomFactor), mouse.position)
 		bounds.max = Matter.Vector.add(Matter.Vector.mult(Matter.Vector.sub(bounds.max, mouse.position), zoomFactor), mouse.position)
+	}
+
+	updateCanvasDimensions = () => {
+		const canvas = this.state.canvasRef.current
+		if (!canvas)
+			return
+
+		//let canvasDimensions = Object.assign({}, this.state.canvasDimensions)
+		if (canvas.offsetWidth !== canvas.width || canvas.offsetHeight !== canvas.height) {
+			console.log("boom")
+			canvas.width  = canvas.offsetWidth
+			canvas.height = canvas.offsetHeight
+
+			if (this.matterRender) {
+				this.matterRender.bounds = {
+					min: {
+						x: -canvas.width / 2,
+						y: -canvas.height / 2
+					},
+					max: {
+						x: canvas.width / 2,
+						y: canvas.height / 2
+					}
+				}
+
+				this.matterRender.options.width = canvas.width
+				this.matterRender.options.height = canvas.height
+			}
+		}
 	}
 
 	spawnRandomObjects = (count: number) => {
