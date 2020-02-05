@@ -1,6 +1,6 @@
 ///<reference path="./types/types.d.ts" />
 
-export const createBounds = (p1: Point, p2: Point) => {
+export const createBounds = (p1: Vector2D, p2: Vector2D) => {
 	return {
 		min: {
 			x: Math.min(p1.x, p2.x),
@@ -15,7 +15,7 @@ export const createBounds = (p1: Point, p2: Point) => {
 
 export const boundsOverlap = (b1: Bounds, b2: Bounds) => !(b2.min.x >= b1.max.x || b2.max.x <= b1.min.x || b2.max.y <= b1.min.y || b2.min.y >= b1.max.y)
 
-export const circleOverlapBounds = (p: Point, r: number, b: Bounds) => {
+export const circleOverlapBounds = (p: Vector2D, r: number, b: Bounds) => {
 	const bHalfWidth = (b.max.x - b.min.x) / 2
 	const bHalfHeight = (b.max.y - b.min.y) / 2
 	const bCenter = {
@@ -37,31 +37,31 @@ export const circleOverlapBounds = (p: Point, r: number, b: Bounds) => {
 	return cornerDistSq <= Math.pow(r, 2)
 }
 
-export const distanceSq = (p1: Point, p2: Point) => {
+export const distanceSq = (p1: Vector2D, p2: Vector2D) => {
 	const dx = p1.x - p2.x
 	const dy = p1.y - p2.y
 	return dx * dx + dy * dy
 }
 
-export const pointInBounds = (p: Point, b: Bounds, includeEdges: boolean = true) => {
+export const pointInBounds = (p: Vector2D, b: Bounds, includeEdges: boolean = true) => {
 	if (includeEdges)
 		return p.x >= b.min.x && p.x <= b.max.x && p.y >= b.min.y && p.y <= b.max.y
 	else
 		return p.x > b.min.x && p.x < b.max.x && p.y > b.min.y && p.y < b.max.y
 }
 
-export const pointNearBounds = (p: Point, r: number, b: Bounds) => {
+export const pointNearBounds = (p: Vector2D, r: number, b: Bounds) => {
 	return  p.x - r < b.min.x ||
 			p.x + r > b.max.x ||
 			p.y - r < b.min.y ||
 			p.y + r > b.max.y
 }
 
-export const resizeBounds2WaySplit = (boundaries: Array<Boundary>, mousePos: Point, vertical: boolean) => {
+export const resizeBounds2WaySplit = (boundaries: Array<Boundary>, mousePos: Vector2D, vertical: boolean) => {
 
 }
 
-export const resizeBounds4WaySplit = (boundaries: Array<Boundary>, mousePos: Point) => {
+export const resizeBounds4WaySplit = (boundaries: Array<Boundary>, mousePos: Vector2D) => {
 
 }
 

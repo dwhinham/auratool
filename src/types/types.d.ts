@@ -1,11 +1,11 @@
-interface Point {
+interface Vector2D {
 	x: number,
 	y: number
 }
 
 interface Bounds {
-	min: Point,
-	max: Point
+	min: Vector2D,
+	max: Vector2D
 }
 
 interface Boundary {

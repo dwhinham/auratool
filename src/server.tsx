@@ -53,10 +53,10 @@ interface ServerState {
 	showCrosshair: boolean,
 	draggingBody: boolean,
 	mouseButton?: number,
-	mouseDownPos?: Point,
-	mouseDownPosCanvas?: Point,
-	dragStartPos?: Point,
-	dragLastPos?: Point,
+	mouseDownPos?: Vector2D,
+	mouseDownPosCanvas?: Vector2D,
+	dragStartPos?: Vector2D,
+	dragLastPos?: Vector2D,
 	snookerBody?: Matter.Body,
 	clickedBoundary?: Boundary,
 	clickedOldBounds?: Bounds,
@@ -834,9 +834,9 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 	}
 
 	// Convert a position in world space to canvas space
-	worldToCanvas = (position: Point) => {
+	worldToCanvas = (position: Vector2D) => {
 		if (!this.matterRender)
-			return {x: 0, y: 0} as Point
+			return {x: 0, y: 0} as Vector2D
 
 		const render = this.matterRender
 		const scale = render.canvas.width / (render.bounds.max.x - render.bounds.min.x)
@@ -861,7 +861,7 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 		})
 	}
 
-	bodyAtPosition = (position: Point) => {
+	bodyAtPosition = (position: Vector2D) => {
 		if (!this.matterWorld)
 			return
 
@@ -873,10 +873,10 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 	// Get position of mouse in canvas or world space (snapped to grid if necessary)
 	getMousePos = (canvas = false, forceUnsnapped = false) => {
 		if (!this.matterMouse)
-			return {x: 0, y: 0} as Point
+			return {x: 0, y: 0} as Vector2D
 
 		const gridSize = this.props.gridSize
-		const mousePos = Object.assign({}, this.matterMouse.position) as Point
+		const mousePos = Object.assign({}, this.matterMouse.position) as Vector2D
 
 		if (!forceUnsnapped && this.props.snapToGrid) {
 			mousePos.x = Math.round(mousePos.x / gridSize) * gridSize
