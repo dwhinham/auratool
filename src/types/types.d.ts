@@ -63,7 +63,8 @@ interface ExportBody {
 	position: Matter.Vector,
 	speed: number,
 	velocity: Matter.Vector,
-	vertices: Array<Matter.Vector>
+	circleRadius?: number
+	vertices?: Array<Matter.Vector>
 }
 
 interface ExportData {

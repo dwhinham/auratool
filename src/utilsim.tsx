@@ -438,14 +438,26 @@ export default class UtilSim extends React.Component<{}, UtilSimState> {
 			const allBodies = Matter.Composite.allBodies(matterWorld)
 
 			// TODO: Make this object typed
-			const bodies: Array<ExportBody> = allBodies.map(body => { return {
-				inverseMass: body.inverseMass,
-				mass: body.mass,
-				position: body.position,
-				speed: body.speed,
-				velocity: body.velocity,
-				vertices: body.vertices.map(vertex => { return Matter.Vector.create(vertex.x, vertex.y) }),
-			}})
+			const bodies: Array<ExportBody> = allBodies.map(body => { 
+				let bodyData: ExportBody = {
+					inverseMass: body.inverseMass,
+					mass: body.mass,
+					position: body.position,
+					speed: body.speed,
+					velocity: body.velocity,
+				}
+
+				// Export only radius if object is a circle
+				if (body.circleRadius)
+					bodyData.circleRadius = body.circleRadius
+				// Otherwise export all vertices
+				else
+					bodyData.vertices = body.vertices.map(vertex => {
+						return Matter.Vector.create(vertex.x, vertex.y)
+					})
+
+				return bodyData
+			})
 
 			//set('bodies', bodies)
 			saveObj.bodies = bodies
@@ -471,7 +483,12 @@ export default class UtilSim extends React.Component<{}, UtilSimState> {
 			if (newState.bodies && this.serverRef.current && this.serverRef.current.matterWorld) {
 				const matterWorld = this.serverRef.current.matterWorld
 				newState.bodies.forEach(bodyData => {
-					let body = Matter.Body.create(bodyData)
+					let body: Matter.Body
+
+					if (bodyData.circleRadius)
+						body = Matter.Bodies.circle(bodyData.position.x, bodyData.position.y, bodyData.circleRadius, bodyData)
+					else
+						body = Matter.Body.create(bodyData)
 
 					// We need to do this so Matter intializes previousPosition so that
 					// velocity is applied properly and the object resumes movement.
