@@ -6,7 +6,7 @@ import MathJax from 'react-mathjax2';
 import 'bootstrap/dist/css/bootstrap.css';
 import './index.css';
 
-import UtilSim from './utilsim'
+import App from './App'
 import * as serviceWorker from './serviceWorker';
 
 // Setup Font Awesome
@@ -22,25 +22,18 @@ library.add(
 	faTh, faThLarge, faTrash, faVectorSquare
 )
 
-// Setup Why Did You Render?
-// if (process.env.NODE_ENV !== 'production') {
-// 	const whyDidYouRender = require('@welldone-software/why-did-you-render/dist/no-classes-transpile/umd/whyDidYouRender.min.js');
-// 	whyDidYouRender(React);
-// }
+const MATHJAX_OPTIONS = {
+	asciimath2jax: {
+		useMathMLspacing: true,
+		preview: "none",
+	}
+}
 
 ReactDOM.render(
-	<MathJax.Context
-		input='ascii'
-		options={{
-			asciimath2jax: {
-				useMathMLspacing: true,
-				preview: "none",
-			}
-		}}
-	>
-		<UtilSim/>
+	<MathJax.Context input="ascii" options={ MATHJAX_OPTIONS }>
+		<App />
 	</MathJax.Context>,
-	document.getElementById('root')
+	document.getElementById("root")
 );
 
 // If you want your app to work offline and load faster, you can change

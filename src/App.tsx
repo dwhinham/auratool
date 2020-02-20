@@ -16,15 +16,15 @@ import ButtonToolbar from 'react-bootstrap/ButtonToolbar'
 import ButtonGroup from 'react-bootstrap/ButtonGroup'
 import Modal from 'react-bootstrap/Modal'
 
-import { boundsOverlap, pointInBounds, pointNearBounds } from './util'
-import { constants } from './variables'
-import ControlPanel from './controlpanel'
-import FunctionPlot from './functionplot'
-import ImportDropTarget from './importdroptarget'
-import MainToolbar from './maintoolbar'
-import Server, { MouseMode } from './server'
+import { boundsOverlap, pointInBounds, pointNearBounds } from './Utility'
+import { constants } from './components/Variables'
+import ControlPanel from './components/ControlPanel'
+import FunctionPlot from './components/FunctionPlot'
+import ImportDropTarget from './components/ImportDropTarget'
+import Header from './components/Header'
+import PhysicsSim, { MouseMode } from './components/PhysicsSim'
 
-import { ControlsContainer, ColumnFlexContainer, RowFlexContainer, FillParentFlexItem } from './layout'
+import { ControlsContainer, ColumnFlexContainer, RowFlexContainer, FillParentFlexItem } from './Layout'
 
 const colors = [
 	'#e6194b',
@@ -53,7 +53,7 @@ const colors = [
 
 const A_VERY_BIG_NUMBER = 100000
 
-interface UtilSimState {
+interface AppState {
 	// UI
 	showColorPicker: boolean,
 	showImportModal: boolean,
@@ -71,10 +71,8 @@ interface UtilSimState {
 	utilServer: UtilityFunction
 }
 
-export default class UtilSim extends React.Component<{}, UtilSimState> {
-	//static whyDidYouRender = true
-
-	serverRef: React.RefObject<Server>
+export default class App extends React.Component<{}, AppState> {
+	physicsSimRef: React.RefObject<PhysicsSim>
 	lastFrameTime: number
 	frameTimeHistory: Array<number>
 
@@ -84,11 +82,11 @@ export default class UtilSim extends React.Component<{}, UtilSimState> {
 		const defaultConstantValues: UtilityVariables = {}
 		Object.keys(constants).forEach((key) => defaultConstantValues[key] = constants[key].defaultValue as number)
 
-		this.serverRef = React.createRef()
+		this.physicsSimRef = React.createRef()
 		this.lastFrameTime = 0
 		this.frameTimeHistory = new Array(10)
 
-		const localStorageState = get<UtilSimState>('utilSim')
+		const localStorageState = get<AppState>('utilSim')
 		if (localStorageState) {
 			console.log('Loading settings from local storage')
 			this.state = localStorageState
@@ -390,27 +388,27 @@ export default class UtilSim extends React.Component<{}, UtilSimState> {
 	}
 
 	onRandomClicked = () => {
-		if (!this.serverRef.current)
+		if (!this.physicsSimRef.current)
 			return;
-		this.serverRef.current.spawnRandomObjects(100)
+		this.physicsSimRef.current.spawnRandomObjects(100)
 	}
 
 	onClearClicked = () => {
-		if (!this.serverRef.current)
+		if (!this.physicsSimRef.current)
 			return;
-		this.serverRef.current.clearAllObjects()
+		this.physicsSimRef.current.clearAllObjects()
 	}
 
 	onHomeClicked = () => {
-		if (!this.serverRef.current)
+		if (!this.physicsSimRef.current)
 			return;
-		this.serverRef.current.resetView()
+		this.physicsSimRef.current.resetView()
 	}
 
 	onShowAllObjectsClicked = () => {
-		if (!this.serverRef.current)
+		if (!this.physicsSimRef.current)
 			return;
-		this.serverRef.current.showAllObjects()
+		this.physicsSimRef.current.showAllObjects()
 	}
 
 	onImportClicked = () => {
@@ -432,8 +430,8 @@ export default class UtilSim extends React.Component<{}, UtilSimState> {
 			}
 		}
 
-		if (this.serverRef.current && this.serverRef.current.matterWorld) {
-			const matterWorld = this.serverRef.current.matterWorld
+		if (this.physicsSimRef.current && this.physicsSimRef.current.matterWorld) {
+			const matterWorld = this.physicsSimRef.current.matterWorld
 			const allBodies = Matter.Composite.allBodies(matterWorld)
 
 			// TODO: Make this object typed
@@ -479,8 +477,8 @@ export default class UtilSim extends React.Component<{}, UtilSimState> {
 				this.setState(newState.simState)
 
 			// Load bodies
-			if (newState.bodies && this.serverRef.current && this.serverRef.current.matterWorld) {
-				const matterWorld = this.serverRef.current.matterWorld
+			if (newState.bodies && this.physicsSimRef.current && this.physicsSimRef.current.matterWorld) {
+				const matterWorld = this.physicsSimRef.current.matterWorld
 				newState.bodies.forEach(bodyData => {
 					let body: Matter.Body
 
@@ -518,7 +516,7 @@ export default class UtilSim extends React.Component<{}, UtilSimState> {
 					</Modal.Footer>
 				</Modal>
 		
-				<MainToolbar
+				<Header
 					onImportClickedCallback = { this.onImportClicked }
 					onExportClickedCallback = { this.onExportClicked }
 				/>
@@ -559,10 +557,9 @@ export default class UtilSim extends React.Component<{}, UtilSimState> {
 								</ButtonGroup>
 							</ButtonToolbar>
 						</ControlsContainer>
-						<Server
-							ref={this.serverRef}
+						<PhysicsSim
+							ref={this.physicsSimRef}
 							boundaries={this.state.boundaries}
-							//objects={this.state.objects}
 
 							// State
 							gridSize={this.state.gridSize}

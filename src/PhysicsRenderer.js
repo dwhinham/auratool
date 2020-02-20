@@ -1,7 +1,7 @@
 /**
 * Custom Matter.js Canvas renderer based on Matter.Render.
 *
-* @class RenderAuraProj
+* @class PhysicsRenderer
 */
 
 import Bounds from 'matter-js/src/geometry/Bounds'
@@ -13,7 +13,7 @@ import Mouse from 'matter-js/src/core/Mouse'
 import Vector from 'matter-js/src/geometry/Vector'
 import { round } from 'lodash'
 
-export class RenderAuraProj {
+export class PhysicsRenderer {
 	static _requestAnimationFrame = (() => {
 		if (typeof window !== 'undefined') {
 			return  window.requestAnimationFrame ||
@@ -55,7 +55,7 @@ export class RenderAuraProj {
 	 */
 	static create(options) {
 		var defaults = {
-			controller: RenderAuraProj,
+			controller: PhysicsRenderer,
 			engine: null,
 			element: null,
 			canvas: null,
@@ -101,7 +101,7 @@ export class RenderAuraProj {
 
 		render.mouse = options.mouse;
 		render.engine = options.engine;
-		render.canvas = render.canvas || RenderAuraProj._createCanvas(render.options.width, render.options.height);
+		render.canvas = render.canvas || PhysicsRenderer._createCanvas(render.options.width, render.options.height);
 		render.context = render.canvas.getContext('2d');
 		render.textures = {};
 
@@ -117,13 +117,13 @@ export class RenderAuraProj {
 		};
 
 		if (render.options.pixelRatio !== 1) {
-			RenderAuraProj.setPixelRatio(render, render.options.pixelRatio);
+			PhysicsRenderer.setPixelRatio(render, render.options.pixelRatio);
 		}
 
 		if (Common.isElement(render.element)) {
 			render.element.appendChild(render.canvas);
 		} else if (!render.canvas.parentNode) {
-			Common.log('RenderAuraProj.create: options.element was undefined, render.canvas was created but not appended', 'warn');
+			Common.log('PhysicsRenderer.create: options.element was undefined, render.canvas was created but not appended', 'warn');
 		}
 
 		return render;
@@ -136,18 +136,18 @@ export class RenderAuraProj {
 	 */
 	static run(render) {
 		(function loop(time){
-			render.frameRequestId = RenderAuraProj._requestAnimationFrame.call(window, loop);
-			RenderAuraProj.world(render);
+			render.frameRequestId = PhysicsRenderer._requestAnimationFrame.call(window, loop);
+			PhysicsRenderer.world(render);
 		})();
 	};
 
 	/**
-	 * Ends execution of `RenderAuraProj.run` on the given `render`, by canceling the animation frame request event loop.
+	 * Ends execution of `PhysicsRenderer.run` on the given `render`, by canceling the animation frame request event loop.
 	 * @method stop
 	 * @param {render} render
 	 */
 	static stop(render) {
-		RenderAuraProj._cancelAnimationFrame.call(window, render.frameRequestId);
+		PhysicsRenderer._cancelAnimationFrame.call(window, render.frameRequestId);
 	};
 
 	/**
@@ -162,7 +162,7 @@ export class RenderAuraProj {
 			canvas = render.canvas;
 
 		if (pixelRatio === 'auto') {
-			pixelRatio = RenderAuraProj._getPixelRatio(canvas);
+			pixelRatio = PhysicsRenderer._getPixelRatio(canvas);
 		}
 
 		options.pixelRatio = pixelRatio;
@@ -313,8 +313,8 @@ export class RenderAuraProj {
 		const xOriginOffset = -bounds.min.x
 		const yOriginOffset = -bounds.min.y
 
-		const xGridOffset = RenderAuraProj._mod(xOriginOffset, gridSize)
-		const yGridOffset = RenderAuraProj._mod(yOriginOffset, gridSize)
+		const xGridOffset = PhysicsRenderer._mod(xOriginOffset, gridSize)
+		const yGridOffset = PhysicsRenderer._mod(yOriginOffset, gridSize)
 
 		const gridStrokeStyle = 'rgb(128, 128, 255, 0.2)'
 		const originStrokeStyle = 'rgb(255, 128, 128, 0.5)'
@@ -325,7 +325,7 @@ export class RenderAuraProj {
 		context.fillStyle = 'black'
 
 		const drawXGridLine = (x, label) => {
-			x = RenderAuraProj._roundDrawCoord(x)
+			x = PhysicsRenderer._roundDrawCoord(x)
 			context.beginPath()
 			context.moveTo(x, 0)
 			context.lineTo(x, canvasHeight)
@@ -335,7 +335,7 @@ export class RenderAuraProj {
 		}
 
 		const drawYGridLine = (y, label) => {
-			y = RenderAuraProj._roundDrawCoord(y)
+			y = PhysicsRenderer._roundDrawCoord(y)
 			context.beginPath()
 			context.moveTo(0, y)
 			context.lineTo(canvasWidth, y)
@@ -351,7 +351,7 @@ export class RenderAuraProj {
 		if (yGridOffset !== 0) yLabel += gridSize
 
 		for (var x = xGridOffset; x < boundsWidth; x += gridSize, xLabel += gridSize) {
-			if (RenderAuraProj._almostEqual(x, xOriginOffset)) {
+			if (PhysicsRenderer._almostEqual(x, xOriginOffset)) {
 				// Red origin line
 				context.save()
 				context.strokeStyle = originStrokeStyle
@@ -362,7 +362,7 @@ export class RenderAuraProj {
 		}
 
 		for (var y = yGridOffset; y < boundsHeight; y += gridSize, yLabel += gridSize) {
-			if (RenderAuraProj._almostEqual(y, yOriginOffset)) {
+			if (PhysicsRenderer._almostEqual(y, yOriginOffset)) {
 				// Red origin line
 				context.save()
 				context.strokeStyle = originStrokeStyle
@@ -388,8 +388,8 @@ export class RenderAuraProj {
 			crosshairY = Math.round(crosshairY / gridSize) * gridSize
 		}
 
-		const drawX = RenderAuraProj._roundDrawCoord((crosshairX - render.bounds.min.x) * scale)
-		const drawY = RenderAuraProj._roundDrawCoord((crosshairY - render.bounds.min.y) * scale)
+		const drawX = PhysicsRenderer._roundDrawCoord((crosshairX - render.bounds.min.x) * scale)
+		const drawY = PhysicsRenderer._roundDrawCoord((crosshairY - render.bounds.min.y) * scale)
 
 		context.setLineDash([5, 8])
 		context.lineWidth = 1
@@ -437,7 +437,7 @@ export class RenderAuraProj {
 
 		// apply background if it has changed
 		if (render.currentBackground !== background)
-			RenderAuraProj._applyBackground(render, background);
+			PhysicsRenderer._applyBackground(render, background);
 
 		// clear the canvas with a transparent fill, to allow the canvas background to show
 		context.globalCompositeOperation = 'source-in';
@@ -447,7 +447,7 @@ export class RenderAuraProj {
 
 		// Render grid
 		if (render.options.showGrid)
-			RenderAuraProj.drawGrid(render, context);
+			PhysicsRenderer.drawGrid(render, context);
 
 		Events.trigger(render, 'beforeObjects', event);
 
@@ -479,7 +479,7 @@ export class RenderAuraProj {
 			}
 
 			// transform the view
-			RenderAuraProj.startViewTransform(render);
+			PhysicsRenderer.startViewTransform(render);
 
 			// update mouse
 			if (render.mouse) {
@@ -501,60 +501,60 @@ export class RenderAuraProj {
 
 		if (!options.wireframes || (engine.enableSleeping && options.showSleeping)) {
 			// fully featured rendering of bodies
-			RenderAuraProj.bodies(render, bodies, context);
+			PhysicsRenderer.bodies(render, bodies, context);
 		} else {
 			if (options.showConvexHulls)
-				RenderAuraProj.bodyConvexHulls(render, bodies, context);
+				PhysicsRenderer.bodyConvexHulls(render, bodies, context);
 
 			// optimised method for wireframes only
-			RenderAuraProj.bodyWireframes(render, bodies, context);
+			PhysicsRenderer.bodyWireframes(render, bodies, context);
 		}
 
 		if (options.showBounds)
-			RenderAuraProj.bodyBounds(render, bodies, context);
+			PhysicsRenderer.bodyBounds(render, bodies, context);
 
 		if (options.showAxes || options.showAngleIndicator)
-			RenderAuraProj.bodyAxes(render, bodies, context);
+			PhysicsRenderer.bodyAxes(render, bodies, context);
 
 		if (options.showPositions)
-			RenderAuraProj.bodyPositions(render, bodies, context);
+			PhysicsRenderer.bodyPositions(render, bodies, context);
 
 		if (options.showVelocity)
-			RenderAuraProj.bodyVelocity(render, bodies, context);
+			PhysicsRenderer.bodyVelocity(render, bodies, context);
 
 		if (options.showIds)
-			RenderAuraProj.bodyIds(render, bodies, context);
+			PhysicsRenderer.bodyIds(render, bodies, context);
 
 		if (options.showSeparations)
-			RenderAuraProj.separations(render, engine.pairs.list, context);
+			PhysicsRenderer.separations(render, engine.pairs.list, context);
 
 		if (options.showCollisions)
-			RenderAuraProj.collisions(render, engine.pairs.list, context);
+			PhysicsRenderer.collisions(render, engine.pairs.list, context);
 
 		if (options.showVertexNumbers)
-			RenderAuraProj.vertexNumbers(render, bodies, context);
+			PhysicsRenderer.vertexNumbers(render, bodies, context);
 
 		if (options.showMousePosition)
-			RenderAuraProj.mousePosition(render, render.mouse, context);
+			PhysicsRenderer.mousePosition(render, render.mouse, context);
 
-		RenderAuraProj.constraints(constraints, context);
+		PhysicsRenderer.constraints(constraints, context);
 
 		if (options.showBroadphase && engine.broadphase.controller === Grid)
-			RenderAuraProj.grid(render, engine.broadphase, context);
+			PhysicsRenderer.grid(render, engine.broadphase, context);
 
 		if (options.showDebug)
-			RenderAuraProj.debug(render, context);
+			PhysicsRenderer.debug(render, context);
 
 		if (options.hasBounds) {
 			// revert view transforms
-			RenderAuraProj.endViewTransform(render);
+			PhysicsRenderer.endViewTransform(render);
 		}
 
 		Events.trigger(render, 'afterRender', event);
 
 		// Render crosshair
 		if (render.options.showCrosshair)
-			RenderAuraProj.drawCrosshair(render, context);
+			PhysicsRenderer.drawCrosshair(render, context);
 	};
 
 	/**
@@ -787,7 +787,7 @@ export class RenderAuraProj {
 				if (part.render.sprite && part.render.sprite.texture && !options.wireframes) {
 					// part sprite
 					var sprite = part.render.sprite,
-						texture = RenderAuraProj._getTexture(render, sprite.texture);
+						texture = PhysicsRenderer._getTexture(render, sprite.texture);
 
 					c.translate(part.position.x, part.position.y);
 					c.rotate(part.angle);
@@ -830,7 +830,7 @@ export class RenderAuraProj {
 
 					if (!options.wireframes) {
 						if (options.showSleeping && body.isSleeping) {
-							c.fillStyle = RenderAuraProj._colorLuminance(part.render.fillStyle, -0.2)
+							c.fillStyle = PhysicsRenderer._colorLuminance(part.render.fillStyle, -0.2)
 						} else {
 							c.fillStyle = part.render.fillStyle;
 						}

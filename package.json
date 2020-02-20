@@ -17,7 +17,6 @@
     "@types/react-color": "^3.0.1",
     "@types/react-dom": "^16.9.5",
     "@types/styled-components": "^4.4.3",
-    "@welldone-software/why-did-you-render": "^4.0.0",
     "bootstrap": "^4.4.1",
     "chart.js": "^2.9.3",
     "evaluatex": "2.1.2",

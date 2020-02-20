@@ -1,15 +1,15 @@
-///<reference path="./types/types.d.ts" />
+///<reference path="../types/types.d.ts" />
 
 import * as React from 'react';
 import { Navbar, Nav } from 'react-bootstrap';
-import logo from './assets/logo.svg';
+import logo from '../assets/logo.svg';
 
-interface MainToolbarProps {
+interface HeaderProps {
 	onImportClickedCallback?: ImportClickedCallback,
 	onExportClickedCallback?: ExportClickedCallback
 }
 
-export const MainToolbar: React.FC<MainToolbarProps> = (props) => {
+export const Header: React.FC<HeaderProps> = (props) => {
 	return <Navbar bg="dark" variant="dark" expand="lg">
 		<Navbar.Brand href="#home">
 			<img
@@ -29,4 +29,4 @@ export const MainToolbar: React.FC<MainToolbarProps> = (props) => {
 	</Navbar>
 }
 
-export default MainToolbar
+export default Header

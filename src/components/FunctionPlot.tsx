@@ -1,11 +1,11 @@
-///<reference path="./types/types.d.ts" />
+///<reference path="../types/types.d.ts" />
 
 import * as React from 'react'
 import { Scatter } from 'react-chartjs-2'
 import * as chartjs from 'chart.js'
 import memoize from 'memoize-one'
 
-import { evaluateUtilFunction } from './util'
+import { evaluateUtilFunction } from '../Utility'
 
 interface FunctionPlotProps {
 	// width: number,

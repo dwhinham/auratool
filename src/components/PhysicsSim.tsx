@@ -1,12 +1,12 @@
-///<reference path="./types/types.d.ts" />
+///<reference path="../types/types.d.ts" />
 
 import * as React from 'react'
 import Matter from 'matter-js'
-import { circleOverlapBounds, createBounds, distanceSq, pointInBounds } from './util'
+import { circleOverlapBounds, createBounds, distanceSq, pointInBounds } from '../Utility'
 import { random } from 'lodash'
 
 // Custom renderer
-import { RenderAuraProj } from './renderauraproj'
+import { PhysicsRenderer } from '../PhysicsRenderer'
 
 export enum MouseMode {
 	OBJECT,
@@ -31,7 +31,7 @@ enum ResizeMode {
 	CROSS_SPLIT
 }
 
-interface ServerProps {
+interface PhysicsSimProps {
 	boundaries: Array<Boundary>,
 	mouseMode: MouseMode,
 	snapToGrid: boolean,
@@ -48,7 +48,7 @@ interface ServerProps {
 	onBoundaryDeleted?: BoundaryDeletedCallback
 }
 
-interface ServerState {
+interface PhysicsSimState {
 	canvasRef: React.RefObject<HTMLCanvasElement>,
 	showCrosshair: boolean,
 	draggingBody: boolean,
@@ -64,17 +64,15 @@ interface ServerState {
 	resizeMode: ResizeMode,
 }
 
-export default class Server extends React.PureComponent<ServerProps, ServerState> {
-	static whyDidYouRender = true
-
+export default class PhysicsSim extends React.PureComponent<PhysicsSimProps, PhysicsSimState> {
 	matterEngine?: Matter.Engine
 	matterMouse?: Matter.Mouse
 	matterMouseConstraint?: Matter.MouseConstraint
-	matterRender?: RenderAuraProj
+	matterRender?: PhysicsRenderer
 	matterRunner?: Matter.Runner
 	matterWorld?: Matter.World
 
-	constructor(props: ServerProps) {
+	constructor(props: PhysicsSimProps) {
 		super(props)
 
 		const canvasRef: React.RefObject<HTMLCanvasElement> = React.createRef()
@@ -154,7 +152,7 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 		})
 
 		// Create a renderer
-		this.matterRender = RenderAuraProj.create({
+		this.matterRender = PhysicsRenderer.create({
 			// Bounds begin centered about the origin
 			bounds: {
 				min: {
@@ -212,7 +210,7 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 		Matter.Runner.run(this.matterRunner, this.matterEngine)
 
 		// Run the renderer
-		RenderAuraProj.run(this.matterRender)
+		PhysicsRenderer.run(this.matterRender)
 
 		// Listen for resize events so we can adjust the canvas
 		window.addEventListener('resize', () => {
@@ -848,7 +846,7 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 			return
 
 		if (this.matterWorld.bodies.length > 0)
-			RenderAuraProj.lookAt(this.matterRender, this.matterWorld.bodies, {x: 50, y: 50}, true)
+			PhysicsRenderer.lookAt(this.matterRender, this.matterWorld.bodies, {x: 50, y: 50}, true)
 	}
 
 	resetView = () => {

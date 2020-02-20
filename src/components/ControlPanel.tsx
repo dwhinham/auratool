@@ -1,4 +1,4 @@
-///<reference path="./types/types.d.ts" />
+///<reference path="../types/types.d.ts" />
 
 import * as React from 'react'
 
@@ -15,9 +15,9 @@ import Tab from 'react-bootstrap/Tab'
 import Table from 'react-bootstrap/Table'
 import Tabs from 'react-bootstrap/Tabs'
 
-import { evaluateServerUtilFunction } from './util'
-import { vars, Variables } from './variables'
-import { FillParentFlexItem } from './layout'
+import { evaluateServerUtilFunction } from '../Utility'
+import { vars, Variables } from './Variables'
+import { FillParentFlexItem } from '../Layout'
 
 export const ControlPanelContainer = styled(FillParentFlexItem)`
 	overflow-y: scroll;
@@ -61,6 +61,19 @@ export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
 		evaluateServerUtilFunction(props.utilServer, props.utilFunctions, b, props.utilConstants, props.utilGlobalVars)
 	)
 	const globalUtilValue = serverUtilValues.length ? serverUtilValues.reduce((a, b) => a + b).toFixed(2) : 0
+
+
+/*
+<MathJax.Context
+		input='ascii'
+		options={{
+			asciimath2jax: {
+				useMathMLspacing: true,
+				preview: "none",
+			}
+		}}
+	>
+*/
 
 	return (
 		<ControlPanelContainer>
