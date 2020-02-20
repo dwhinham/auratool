@@ -10,17 +10,26 @@ import {
 	resizeBounds4WaySplit
 } from '../Utility'
 import { random } from 'lodash'
+import styled from 'styled-components'
 
 // Custom renderer
 import { PhysicsRenderer } from '../PhysicsRenderer'
+
+interface PhysicsCanvasProps {
+	cursor: string
+}
+
+const PhysicsCanvas = styled.canvas<PhysicsCanvasProps>`
+	cursor: ${props => props.cursor};
+`
+
+const MOUSE_BOUNDS_THRESHOLD = 10
 
 export enum MouseMode {
 	OBJECT,
 	BOUNDARY_EDIT,
 	SNOOKER
 }
-
-const MOUSE_BOUNDS_THRESHOLD = 10
 
 enum ResizeMode {
 	NONE,
@@ -382,38 +391,6 @@ export default class PhysicsSim extends React.PureComponent<PhysicsSimProps, Phy
 		return resizeMode
 	}
 
-	updateCanvasCursorStyle = (resizeMode?: ResizeMode, bUnder?: Boundary) => {
-		const canvas = this.state.canvasRef.current
-		if (!canvas)
-			return
-
-		switch (resizeMode) {
-			// Single boundary
-			case ResizeMode.TOP_LEFT_CORNER: 		canvas.style.cursor = 'nw-resize'; 	break;
-			case ResizeMode.TOP_RIGHT_CORNER:		canvas.style.cursor = 'ne-resize'; 	break;
-			case ResizeMode.BOTTOM_RIGHT_CORNER:	canvas.style.cursor = 'se-resize'; 	break;
-			case ResizeMode.BOTTOM_LEFT_CORNER:		canvas.style.cursor = 'sw-resize'; 	break;
-			case ResizeMode.LEFT_EDGE: 				canvas.style.cursor = 'w-resize'; 	break;
-			case ResizeMode.RIGHT_EDGE:				canvas.style.cursor = 'e-resize'; 	break;
-			case ResizeMode.TOP_EDGE:				canvas.style.cursor = 'n-resize'; 	break;
-			case ResizeMode.BOTTOM_EDGE:			canvas.style.cursor = 's-resize'; 	break;
-
-			// Multi boundary
-			case ResizeMode.CROSS_SPLIT:			canvas.style.cursor = 'move'; 		break;
-			case ResizeMode.HORIZONTAL_SPLIT:		canvas.style.cursor = 'ns-resize';	break;
-			case ResizeMode.VERTICAL_SPLIT:			canvas.style.cursor = 'ew-resize';	break;
-
-			default:
-				if (bUnder && this.state.clickedBoundary)
-					canvas.style.cursor = 'grabbing';
-				else if (bUnder)
-					canvas.style.cursor = 'grab';
-				else
-					canvas.style.cursor = 'crosshair';
-				break;
-		}
-	}
-
 	onMouseDown = (event: React.MouseEvent<HTMLCanvasElement>) => {
 		const mousePos = this.getMousePos()
 		const mousePosCanvas = this.getMousePos(true)
@@ -444,7 +421,6 @@ export default class PhysicsSim extends React.PureComponent<PhysicsSimProps, Phy
 				let resizeMode = ResizeMode.NONE
 				if (event.button === 0) {
 					resizeMode = this.checkResizeMode(bUnder, bNear)
-					this.updateCanvasCursorStyle(resizeMode, bUnder)
 				}
 
 				// Mouse button went down near 2 or 4 adjacent boundaries
@@ -557,8 +533,6 @@ export default class PhysicsSim extends React.PureComponent<PhysicsSimProps, Phy
 			clickedBoundary: undefined,
 			clickedOldBounds: undefined
 		})
-
-		this.updateCanvasCursorStyle(undefined, this.boundaryUnderMouse())
 	}
 
 	resizingMultiple = (b: Bounds | Array<Bounds>): b is Array<Bounds> => {
@@ -594,19 +568,11 @@ export default class PhysicsSim extends React.PureComponent<PhysicsSimProps, Phy
 		// Left mouse buttton drag actions
 		switch (this.props.mouseMode) {
 			case MouseMode.BOUNDARY_EDIT: {
-				// Not resizing or moving
-				if (this.state.resizeMode === ResizeMode.NONE && !this.state.clickedBoundary) {
-					// Just look for boundaries near the mouse and update the cursor
-					const bUnder = this.boundaryUnderMouse()
-					const bNear = this.boundariesNearMouse()
-					this.updateCanvasCursorStyle(this.checkResizeMode(bUnder, bNear))
-					break
-				}
-
 				// Bail out if we don't have a callback
 				if (!this.props.onBoundariesUpdated)
 					break
 
+				// Resizing multiple boundaries
 				if (this.state.resizeBoundaries) {
 					switch (this.state.resizeMode) {
 						case ResizeMode.CROSS_SPLIT: {
@@ -633,7 +599,9 @@ export default class PhysicsSim extends React.PureComponent<PhysicsSimProps, Phy
 
 							break
 					}
-				} else if (this.state.clickedBoundary && this.state.clickedOldBounds) {
+				}
+				// Resizing a single boundary
+				else if (this.state.clickedBoundary && this.state.clickedOldBounds) {
 					let newBounds = {
 						min: Object.assign({}, this.state.clickedOldBounds.min),
 						max: Object.assign({}, this.state.clickedOldBounds.max)
@@ -688,9 +656,6 @@ export default class PhysicsSim extends React.PureComponent<PhysicsSimProps, Phy
 
 					// Fixup so that min is always at the top left and max is always at the bottom right
 					newBounds = createBounds(newBounds.min, newBounds.max)
-
-					// Update cursor
-					this.updateCanvasCursorStyle(this.state.resizeMode, this.state.clickedBoundary)
 
 					// Update boundary
 					this.props.onBoundariesUpdated([
@@ -855,9 +820,42 @@ export default class PhysicsSim extends React.PureComponent<PhysicsSimProps, Phy
 		return canvas ? this.worldToCanvas(mousePos) : mousePos
 	}
 
+	getCanvasCursorStyle = () => {
+		if (this.props.mouseMode === MouseMode.BOUNDARY_EDIT) {
+			const bUnder = this.boundaryUnderMouse()
+			const bNear = this.boundariesNearMouse()
+			const resizeMode = this.checkResizeMode(bUnder, bNear)
+	
+			switch (resizeMode) {
+				// Single boundary
+				case ResizeMode.TOP_LEFT_CORNER: 		return 'nw-resize'
+				case ResizeMode.TOP_RIGHT_CORNER:		return 'ne-resize'
+				case ResizeMode.BOTTOM_RIGHT_CORNER:	return 'se-resize'
+				case ResizeMode.BOTTOM_LEFT_CORNER:		return 'sw-resize'
+				case ResizeMode.LEFT_EDGE: 				return 'w-resize'
+				case ResizeMode.RIGHT_EDGE:				return 'e-resize'
+				case ResizeMode.TOP_EDGE:				return 'n-resize'
+				case ResizeMode.BOTTOM_EDGE:			return 's-resize'
+	
+				// Multi boundary
+				case ResizeMode.CROSS_SPLIT:			return 'move'
+				case ResizeMode.HORIZONTAL_SPLIT:		return 'ns-resize'
+				case ResizeMode.VERTICAL_SPLIT:			return 'ew-resize'
+			}
+	
+			if (bUnder && this.state.clickedBoundary)
+				return 'grabbing'
+			if (bUnder)
+				return 'grab'
+		}
+
+		return 'crosshair'
+	}
+
 	render() {
 		return (
-			<canvas
+			<PhysicsCanvas
+				cursor={this.getCanvasCursorStyle()}
 				ref={this.state.canvasRef}
 				onMouseDown={this.onMouseDown}
 				onMouseUp={this.onMouseUp}
