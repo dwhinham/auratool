@@ -213,6 +213,11 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 
 		// Run the renderer
 		RenderAuraProj.run(this.matterRender)
+
+		// Listen for resize events so we can adjust the canvas
+		window.addEventListener('resize', () => {
+			this.updateCanvasDimensions()
+		})
 	}
 
 	onBeforeUpdate = (event: Matter.IEventTimestamped<Matter.Engine>) => {
@@ -229,9 +234,6 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 	onBeforeRender = (event: Matter.IEventTimestamped<Matter.Render>) => {
 		if (!this.matterRender)
 			return
-
-		// Detect canvas resize
-		this.updateCanvasDimensions()
 
 		// Update some rendering options
 		this.matterRender.options.gridSize = this.props.gridSize
@@ -796,27 +798,23 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 		if (!canvas)
 			return
 
-		//let canvasDimensions = Object.assign({}, this.state.canvasDimensions)
-		if (canvas.offsetWidth !== canvas.width || canvas.offsetHeight !== canvas.height) {
-			console.log("boom")
-			canvas.width  = canvas.offsetWidth
-			canvas.height = canvas.offsetHeight
+		canvas.width = canvas.clientWidth
+		canvas.height = canvas.clientHeight
 
-			if (this.matterRender) {
-				this.matterRender.bounds = {
-					min: {
-						x: -canvas.width / 2,
-						y: -canvas.height / 2
-					},
-					max: {
-						x: canvas.width / 2,
-						y: canvas.height / 2
-					}
+		if (this.matterRender) {
+			this.matterRender.bounds = {
+				min: {
+					x: -canvas.width / 2,
+					y: -canvas.height  / 2
+				},
+				max: {
+					x: canvas.width / 2,
+					y: canvas.height / 2
 				}
-
-				this.matterRender.options.width = canvas.width
-				this.matterRender.options.height = canvas.height
 			}
+
+			this.matterRender.options.width = canvas.width
+			this.matterRender.options.height = canvas.height
 		}
 	}
 
@@ -920,18 +918,15 @@ export default class Server extends React.PureComponent<ServerProps, ServerState
 
 	render() {
 		return (
-			// Don't apply any borders/scaling etc to the canvas directly or mouse coords will be off
-			<div id={"canvasContainer"}>
-				<canvas
-					ref={this.state.canvasRef}
-					onMouseDown={this.onMouseDown}
-					onMouseUp={this.onMouseUp}
-					onMouseMove={this.onMouseMove}
-					onMouseOver={this.onMouseOver}
-					onMouseOut={this.onMouseOut}
-					onWheel={this.onWheel}
-				/>
-			</div>
+			<canvas
+				ref={this.state.canvasRef}
+				onMouseDown={this.onMouseDown}
+				onMouseUp={this.onMouseUp}
+				onMouseMove={this.onMouseMove}
+				onMouseOver={this.onMouseOver}
+				onMouseOut={this.onMouseOut}
+				onWheel={this.onWheel}
+			/>
 		)
 	}
 }

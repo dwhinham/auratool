@@ -14,10 +14,7 @@ import Backend from 'react-dnd-html5-backend'
 import Button from 'react-bootstrap/Button'
 import ButtonToolbar from 'react-bootstrap/ButtonToolbar'
 import ButtonGroup from 'react-bootstrap/ButtonGroup'
-import Col from 'react-bootstrap/Col'
-import Container from 'react-bootstrap/Container'
 import Modal from 'react-bootstrap/Modal'
-import Row from 'react-bootstrap/Row'
 
 import { boundsOverlap, pointInBounds, pointNearBounds } from './util'
 import { constants } from './variables'
@@ -26,6 +23,8 @@ import FunctionPlot from './functionplot'
 import ImportDropTarget from './importdroptarget'
 import MainToolbar from './maintoolbar'
 import Server, { MouseMode } from './server'
+
+import { ControlsContainer, ColumnFlexContainer, RowFlexContainer, FillParentFlexItem } from './layout'
 
 const colors = [
 	'#e6194b',
@@ -500,14 +499,9 @@ export default class UtilSim extends React.Component<{}, UtilSimState> {
 		}
 	}
 
-	render() {
+	render = () => {
 		return (
-			<div>
-				<MainToolbar
-					onImportClickedCallback = { this.onImportClicked }
-					onExportClickedCallback = { this.onExportClicked }
-				/>
-
+			<ColumnFlexContainer>
 				<Modal show={ this.state.showImportModal } onHide={ () => { this.setState({ showImportModal: false }) } }>
 					<Modal.Header closeButton>
 						<Modal.Title>Import data</Modal.Title>
@@ -523,104 +517,99 @@ export default class UtilSim extends React.Component<{}, UtilSimState> {
 						</Button>
 					</Modal.Footer>
 				</Modal>
+		
+				<MainToolbar
+					onImportClickedCallback = { this.onImportClicked }
+					onExportClickedCallback = { this.onExportClicked }
+				/>
 
-				<Container fluid={true} className="mt-2">
-					<Row>
-						<Col>
-							<Row>
-								<Col>
-									<ButtonToolbar className="mb-2">
-										<ButtonGroup className="mr-2">
-											<Button size="sm" variant="secondary" title="Object mode" active={this.state.mouseMode === MouseMode.OBJECT} onClick={() => { this.setState({mouseMode: MouseMode.OBJECT })}}>
-												<FontAwesomeIcon icon="cube"></FontAwesomeIcon>
-											</Button>
-											<Button size="sm" variant="secondary" title="Boundary mode" active={this.state.mouseMode === MouseMode.BOUNDARY_EDIT} onClick={() => { this.setState({mouseMode: MouseMode.BOUNDARY_EDIT })}}>
-												<FontAwesomeIcon icon="vector-square"></FontAwesomeIcon>
-											</Button>
-											<Button size="sm" variant="secondary" title="Snooker mode" active={this.state.mouseMode === MouseMode.SNOOKER} onClick={() => { this.setState({mouseMode: MouseMode.SNOOKER })}}>
-												<FontAwesomeIcon icon="bowling-ball"></FontAwesomeIcon>
-											</Button>
-										</ButtonGroup>
-										<ButtonGroup className="mr-2">
-											<Button size="sm" variant="secondary" title="Reset view" onClick={this.onHomeClicked}><FontAwesomeIcon icon="home"></FontAwesomeIcon></Button>
-											<Button size="sm" variant="secondary" title="Show all objects" onClick={this.onShowAllObjectsClicked}><FontAwesomeIcon icon="eye"></FontAwesomeIcon></Button>
-										</ButtonGroup>
-										<ButtonGroup className="mr-2">
-											<Button size="sm" variant="secondary" title="Toggle snap to grid" active={this.state.snapToGrid} onClick={() => { this.setState({snapToGrid: !this.state.snapToGrid })}}>
-												<FontAwesomeIcon icon="magnet"></FontAwesomeIcon>
-											</Button>
-											<Button size="sm" variant="secondary" title="Decrease grid size" onClick={() => { this.setState({gridSize: Math.max(25, this.state.gridSize / 2)}) }}>
-												<FontAwesomeIcon icon="th"></FontAwesomeIcon>
-											</Button>
-											<Button size="sm" variant="secondary" title="Increase grid size" onClick={() => { this.setState({gridSize: this.state.gridSize * 2}) }}>
-												<FontAwesomeIcon icon="th-large"></FontAwesomeIcon>
-											</Button>
-										</ButtonGroup>
-										<ButtonGroup className="mr-2">
-											<Button size="sm" variant="secondary" title="Spawn random objects" onClick={this.onRandomClicked}><FontAwesomeIcon icon="dice"></FontAwesomeIcon></Button>
-											<Button size="sm" variant="warning" title="Remove all objects" onClick={this.onClearClicked}><FontAwesomeIcon icon="radiation"></FontAwesomeIcon></Button>
-										</ButtonGroup>
-									</ButtonToolbar>
-								</Col>
-							</Row>
-							<Row>
-								<Col>
-									<Server
-										ref={this.serverRef}
-										boundaries={this.state.boundaries}
-										//objects={this.state.objects}
+				<RowFlexContainer>
+					<FillParentFlexItem>
+						<ControlsContainer>
+							<ButtonToolbar>
+								<ButtonGroup className="mr-2">
+									<Button size="sm" variant="secondary" title="Object mode" active={this.state.mouseMode === MouseMode.OBJECT} onClick={() => { this.setState({mouseMode: MouseMode.OBJECT })}}>
+										<FontAwesomeIcon icon="cube"></FontAwesomeIcon>
+									</Button>
+									<Button size="sm" variant="secondary" title="Boundary mode" active={this.state.mouseMode === MouseMode.BOUNDARY_EDIT} onClick={() => { this.setState({mouseMode: MouseMode.BOUNDARY_EDIT })}}>
+										<FontAwesomeIcon icon="vector-square"></FontAwesomeIcon>
+									</Button>
+									<Button size="sm" variant="secondary" title="Snooker mode" active={this.state.mouseMode === MouseMode.SNOOKER} onClick={() => { this.setState({mouseMode: MouseMode.SNOOKER })}}>
+										<FontAwesomeIcon icon="bowling-ball"></FontAwesomeIcon>
+									</Button>
+								</ButtonGroup>
+								<ButtonGroup className="mr-2">
+									<Button size="sm" variant="secondary" title="Reset view" onClick={this.onHomeClicked}><FontAwesomeIcon icon="home"></FontAwesomeIcon></Button>
+									<Button size="sm" variant="secondary" title="Show all objects" onClick={this.onShowAllObjectsClicked}><FontAwesomeIcon icon="eye"></FontAwesomeIcon></Button>
+								</ButtonGroup>
+								<ButtonGroup className="mr-2">
+									<Button size="sm" variant="secondary" title="Toggle snap to grid" active={this.state.snapToGrid} onClick={() => { this.setState({snapToGrid: !this.state.snapToGrid })}}>
+										<FontAwesomeIcon icon="magnet"></FontAwesomeIcon>
+									</Button>
+									<Button size="sm" variant="secondary" title="Decrease grid size" onClick={() => { this.setState({gridSize: Math.max(25, this.state.gridSize / 2)}) }}>
+										<FontAwesomeIcon icon="th"></FontAwesomeIcon>
+									</Button>
+									<Button size="sm" variant="secondary" title="Increase grid size" onClick={() => { this.setState({gridSize: this.state.gridSize * 2}) }}>
+										<FontAwesomeIcon icon="th-large"></FontAwesomeIcon>
+									</Button>
+								</ButtonGroup>
+								<ButtonGroup className="mr-2">
+									<Button size="sm" variant="secondary" title="Spawn random objects" onClick={this.onRandomClicked}><FontAwesomeIcon icon="dice"></FontAwesomeIcon></Button>
+									<Button size="sm" variant="warning" title="Remove all objects" onClick={this.onClearClicked}><FontAwesomeIcon icon="radiation"></FontAwesomeIcon></Button>
+								</ButtonGroup>
+							</ButtonToolbar>
+						</ControlsContainer>
+						<Server
+							ref={this.serverRef}
+							boundaries={this.state.boundaries}
+							//objects={this.state.objects}
 
-										// State
-										gridSize={this.state.gridSize}
-										mouseMode={this.state.mouseMode}
-										snapToGrid={this.state.snapToGrid}
+							// State
+							gridSize={this.state.gridSize}
+							mouseMode={this.state.mouseMode}
+							snapToGrid={this.state.snapToGrid}
 
-										// Callbacks
-										onBoundaryAdded={this.onBoundaryAdded}
-										onBoundariesUpdated={this.onBoundariesUpdated}
-										onBoundaryDeleted={this.onBoundaryDeleted}
+							// Callbacks
+							onBoundaryAdded={this.onBoundaryAdded}
+							onBoundariesUpdated={this.onBoundariesUpdated}
+							onBoundaryDeleted={this.onBoundaryDeleted}
 
-										onEngineBeforeUpdate={this.onEngineBeforeUpdate}
-										onEngineAfterUpdate={this.onEngineAfterUpdate}
-									/>
-								</Col>
-							</Row>
-						</Col>
-						<Col>
-							<FunctionPlot
-								boundaries={this.state.boundaries}
-								utilFunctions={this.state.utilFunctions}
-								utilConstants={this.state.utilConstants}
-								utilGlobalVars={this.state.utilGlobalVars}
-							/>
-						</Col>
-						<Col>
-							<ControlPanel
-								// Physics state
-								boundaries={this.state.boundaries}
+							onEngineBeforeUpdate={this.onEngineBeforeUpdate}
+							onEngineAfterUpdate={this.onEngineAfterUpdate}
+						/>
+					</FillParentFlexItem>
+					<FillParentFlexItem>
+						<FunctionPlot
+							boundaries={this.state.boundaries}
+							utilFunctions={this.state.utilFunctions}
+							utilConstants={this.state.utilConstants}
+							utilGlobalVars={this.state.utilGlobalVars}
+						/>
+					</FillParentFlexItem>
+					<ControlPanel
+						// Physics state
+						boundaries={this.state.boundaries}
 
-								// Utility state
-								utilFunctions={this.state.utilFunctions}
-								utilConstants={this.state.utilConstants}
-								utilGlobalVars={this.state.utilGlobalVars}
-								utilServer={this.state.utilServer}
+						// Utility state
+						utilFunctions={this.state.utilFunctions}
+						utilConstants={this.state.utilConstants}
+						utilGlobalVars={this.state.utilGlobalVars}
+						utilServer={this.state.utilServer}
 
-								// Control panel callbacks
-								onUtilFunctionUpdated={this.onUtilFunctionUpdated}
-								onUtilFunctionAdded={this.onUtilFunctionAdded}
-								onUtilFunctionDeleted={this.onUtilFunctionDeleted}
-								onServerUtilFunctionUpdated={this.onServerUtilFunctionUpdated}
-								onUtilConstantUpdated={this.onUtilConstantUpdated}
-								onUtilVarUpdated={this.onUtilVarUpdated}
-								onChangeColorClicked={this.onChangeColorClicked}
-								onColorUpdated={this.onColorUpdated}
-								showColorPicker={this.state.showColorPicker}
-								colorIndex={this.state.colorIndex}
-							/>
-						</Col>
-					</Row>
-				</Container>
-			</div>
-		);
+						// Control panel callbacks
+						onUtilFunctionUpdated={this.onUtilFunctionUpdated}
+						onUtilFunctionAdded={this.onUtilFunctionAdded}
+						onUtilFunctionDeleted={this.onUtilFunctionDeleted}
+						onServerUtilFunctionUpdated={this.onServerUtilFunctionUpdated}
+						onUtilConstantUpdated={this.onUtilConstantUpdated}
+						onUtilVarUpdated={this.onUtilVarUpdated}
+						onChangeColorClicked={this.onChangeColorClicked}
+						onColorUpdated={this.onColorUpdated}
+						showColorPicker={this.state.showColorPicker}
+						colorIndex={this.state.colorIndex}
+					/>
+				</RowFlexContainer>
+			</ColumnFlexContainer>
+		)
 	}
 }

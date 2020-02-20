@@ -1,33 +1,7 @@
-body {
-	/* font: 14px "Century Gothic", Futura, sans-serif;
-	margin: 20px; */
-	background-color: whitesmoke
+html, body, #root {
+	height: 100vh;
 }
 
-ol, ul {
-	padding-left: 20px;
-}
-
-#container {
-	margin: 20px;
-}
-
-#utilSim {
-	display: flex;
-}
-
-#canvasContainer {
-	width: 100%;
-	height: 1000px;
-	border: 1px solid black;
-	cursor: crosshair;
-}
-
-#controlPanel {
-	flex: 1;
-	margin-left: 10px;
-}
-
-.smallText {
-	font-size: 0.7rem;
+html {
+	overflow: hidden;
 }

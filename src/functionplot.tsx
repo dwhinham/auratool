@@ -124,9 +124,8 @@ export default class FunctionPlot extends React.Component<FunctionPlotProps, Fun
 		return (
 			<Scatter
 				data={ data }
-				//width={ this.state.width }
-				//height={ this.state.height }
 				options={{
+					responsive: true,
 					maintainAspectRatio: false,
 					animation: {
 						duration: 0
