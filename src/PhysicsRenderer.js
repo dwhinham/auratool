@@ -300,7 +300,7 @@ export class PhysicsRenderer {
 	};
 
 	static drawGrid(render, context) {
-		const gridSize = render.options.gridSize
+		var gridSize = render.options.gridSize
 		const canvasWidth = render.canvas.width
 		const canvasHeight = render.canvas.height
 		const bounds = render.bounds
@@ -341,7 +341,7 @@ export class PhysicsRenderer {
 			context.lineTo(canvasWidth, y)
 			context.stroke()
 
-			context.fillText(label, 0, y + 2)
+			context.fillText(label, 0, y - 4)
 		}
 
 		// Axis labels
