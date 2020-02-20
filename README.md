@@ -1,5 +1,5 @@
 <p align="center">
-    <img width='640' height='200' src='public/logo.svg'>
+    <img width='640' height='200' src='src/assets/logo.svg'>
 </p>
 
 <a name='about'></a>

@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Navbar, Nav } from 'react-bootstrap';
+import logo from './assets/logo.svg';
 
 interface MainToolbarProps {
 	onImportClickedCallback?: ImportClickedCallback,
@@ -12,7 +13,7 @@ export const MainToolbar: React.FC<MainToolbarProps> = (props) => {
 	return <Navbar bg="dark" variant="dark" expand="lg">
 		<Navbar.Brand href="#home">
 			<img
-				src="logo.svg"
+				src={ logo }
 				width="200"
 				className="d-inline-block align-top"
 				alt="auratool"
