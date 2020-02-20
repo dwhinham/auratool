@@ -2,7 +2,13 @@
 
 import * as React from 'react'
 import Matter from 'matter-js'
-import { circleOverlapBounds, createBounds, distanceSq, pointInBounds } from '../Utility'
+import {
+	circleOverlapBounds,
+	createBounds,
+	pointInBounds,
+	resizeBounds2WaySplit,
+	resizeBounds4WaySplit
+} from '../Utility'
 import { random } from 'lodash'
 
 // Custom renderer
@@ -604,59 +610,10 @@ export default class PhysicsSim extends React.PureComponent<PhysicsSimProps, Phy
 				if (this.state.resizeBoundaries) {
 					switch (this.state.resizeMode) {
 						case ResizeMode.CROSS_SPLIT: {
-							const resizeInfo: Array<BoundaryResizeInfo> = this.state.resizeBoundaries.map((b) => {
-								const bounds = b.bounds
-
-								let newBounds = {
-									min: Object.assign({}, bounds.min),
-									max: Object.assign({}, bounds.max)
-								}
-
-								// Find the closest corner to the mouse
-								const dists = [
-									distanceSq(mousePos, bounds.min),							// Top left
-									distanceSq(mousePos, { x: bounds.max.x, y: bounds.min.y }),	// Top right
-									distanceSq(mousePos, bounds.max),							// Bottom right
-									distanceSq(mousePos, { x: bounds.min.x, y: bounds.max.y }),	// Bottom left
-								]
-								const minIndex = dists.reduce((minIndex, dist, i, dists) => dist < dists[minIndex] ? i : minIndex, 0)
-
-								// Adjust the closest corner
-								switch (minIndex) {
-									// Top left
-									case 0:
-										newBounds.min.x = mousePos.x
-										newBounds.min.y = mousePos.y
-										break
-
-									// Top right
-									case 1:
-										newBounds.max.x = mousePos.x
-										newBounds.min.y = mousePos.y
-										break
-
-									// Bottom right
-									case 2:
-										newBounds.max.x = mousePos.x
-										newBounds.max.y = mousePos.y
-										break
-
-									// Bottom left
-									case 3:
-										newBounds.min.x = mousePos.x
-										newBounds.max.y = mousePos.y
-										break
-
-									default:
-										break
-								}
-
-								// Fixup so that min is always at the top left and max is always at the bottom right
-								return {
-									boundary: b,
-									newBounds: createBounds(newBounds.min, newBounds.max)
-								}
-							})
+							const resizeInfo = resizeBounds4WaySplit(
+								this.state.resizeBoundaries,
+								mousePos,
+							)
 
 							this.props.onBoundariesUpdated(resizeInfo)
 
@@ -665,30 +622,14 @@ export default class PhysicsSim extends React.PureComponent<PhysicsSimProps, Phy
 
 						case ResizeMode.HORIZONTAL_SPLIT:
 						case ResizeMode.VERTICAL_SPLIT:
-							var b1 = this.state.resizeBoundaries[0]
-							var b2 = this.state.resizeBoundaries[1]
-
-							var newBounds1
-							var newBounds2
-
-							if (this.state.resizeMode === ResizeMode.HORIZONTAL_SPLIT) {
-								// Swap boundary order if necessary
-								if (b1.bounds.max.y > b2.bounds.min.y)
-									[b1, b2] = [b2, b1]
-								newBounds1 = createBounds(b1.bounds.min, { x: b1.bounds.max.x, y: mousePos.y })
-								newBounds2 = createBounds({ x: b2.bounds.min.x, y: mousePos.y }, b2.bounds.max)
-							} else {
-								if (b1.bounds.max.x > b2.bounds.min.x)
-									[b1, b2] = [b2, b1]
-								newBounds1 = createBounds(b1.bounds.min, { x: mousePos.x, y: b1.bounds.max.y })
-								newBounds2 = createBounds({ x: mousePos.x, y: b2.bounds.min.y }, b2.bounds.max)
-							}
+							const resizeInfo = resizeBounds2WaySplit(
+								this.state.resizeBoundaries,
+								mousePos,
+								this.state.resizeMode === ResizeMode.VERTICAL_SPLIT
+							)
 
 							// Update boundaries
-							this.props.onBoundariesUpdated([
-								{ boundary: b1, newBounds: newBounds1 },
-								{ boundary: b2, newBounds: newBounds2 },
-							])
+							this.props.onBoundariesUpdated(resizeInfo)
 
 							break
 					}

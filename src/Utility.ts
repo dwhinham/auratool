@@ -57,12 +57,83 @@ export const pointNearBounds = (p: Vector2D, r: number, b: Bounds) => {
 			p.y + r > b.max.y
 }
 
-export const resizeBounds2WaySplit = (boundaries: Array<Boundary>, mousePos: Vector2D, vertical: boolean) => {
+export const resizeBounds2WaySplit = (boundaries: Array<Boundary>, mousePos: Vector2D, vertical: boolean): Array<BoundaryResizeInfo> => {
+	let [b1, b2] = [boundaries[0], boundaries[1]]
+	let newBounds1, newBounds2
 
+	if (vertical) {
+		// Swap boundary order if necessary
+		if (b1.bounds.max.x > b2.bounds.min.x)
+			[b1, b2] = [b2, b1]
+		newBounds1 = createBounds(b1.bounds.min, { x: mousePos.x, y: b1.bounds.max.y })
+		newBounds2 = createBounds({ x: mousePos.x, y: b2.bounds.min.y }, b2.bounds.max)
+	} else {
+		if (b1.bounds.max.y > b2.bounds.min.y)
+			[b1, b2] = [b2, b1]
+		newBounds1 = createBounds(b1.bounds.min, { x: b1.bounds.max.x, y: mousePos.y })
+		newBounds2 = createBounds({ x: b2.bounds.min.x, y: mousePos.y }, b2.bounds.max)
+	}
+
+	return [
+		{ boundary: b1, newBounds: newBounds1 },
+		{ boundary: b2, newBounds: newBounds2 },
+	]
 }
 
-export const resizeBounds4WaySplit = (boundaries: Array<Boundary>, mousePos: Vector2D) => {
+export const resizeBounds4WaySplit = (boundaries: Array<Boundary>, mousePos: Vector2D): Array<BoundaryResizeInfo> => {
+	return boundaries.map((b) => {
+		const bounds = b.bounds
 
+		let newBounds = {
+			min: Object.assign({}, bounds.min),
+			max: Object.assign({}, bounds.max)
+		}
+
+		// Find the closest corner to the mouse
+		const dists = [
+			distanceSq(mousePos, bounds.min),							// Top left
+			distanceSq(mousePos, { x: bounds.max.x, y: bounds.min.y }),	// Top right
+			distanceSq(mousePos, bounds.max),							// Bottom right
+			distanceSq(mousePos, { x: bounds.min.x, y: bounds.max.y }),	// Bottom left
+		]
+		const minIndex = dists.reduce((minIndex, dist, i, dists) => dist < dists[minIndex] ? i : minIndex, 0)
+
+		// Adjust the closest corner
+		switch (minIndex) {
+			// Top left
+			case 0:
+				newBounds.min.x = mousePos.x
+				newBounds.min.y = mousePos.y
+				break
+
+			// Top right
+			case 1:
+				newBounds.max.x = mousePos.x
+				newBounds.min.y = mousePos.y
+				break
+
+			// Bottom right
+			case 2:
+				newBounds.max.x = mousePos.x
+				newBounds.max.y = mousePos.y
+				break
+
+			// Bottom left
+			case 3:
+				newBounds.min.x = mousePos.x
+				newBounds.max.y = mousePos.y
+				break
+
+			default:
+				break
+		}
+
+		// Fixup so that min is always at the top left and max is always at the bottom right
+		return {
+			boundary: b,
+			newBounds: createBounds(newBounds.min, newBounds.max)
+		}
+	})
 }
 
 export const evaluateUtilFunction = (func: SubUtilityFunction, boundary: Boundary, constants: UtilityVariables, globalVars: UtilityVariables) => {
