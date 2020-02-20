@@ -73,6 +73,15 @@ interface ExportData {
 }
 
 // Callbacks
+type MouseModeChangedCallback = (mouseMode: MouseMode) => void
+type HomeClickedCallback = () => void
+type ShowAllObjectsClickedCallback = () => void
+type RandomClickedCallback = () => void
+type ClearClickedCallback = () => void
+type SnapToGridChangedCallback = (snapToGrid: boolean) => void
+type IncreadGridSizeClickedCallback = () => void
+type DecreaseGridSizeClickedCallback = () => void
+
 type ChangeColorClickedCallback = (index?: number) => void
 type ColorUpdatedCallback = (color: ReactColor.ColorResult) => void
 

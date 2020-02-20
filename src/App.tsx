@@ -1,7 +1,7 @@
 ///<reference path="./types/types.d.ts" />
 
 import { cloneDeep } from 'lodash'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+
 import evaluatex from 'evaluatex/dist/evaluatex'
 import { saveAs } from 'file-saver'
 import { get, set } from 'local-storage'
@@ -12,8 +12,6 @@ import { DndProvider } from 'react-dnd'
 import Backend from 'react-dnd-html5-backend'
 
 import Button from 'react-bootstrap/Button'
-import ButtonToolbar from 'react-bootstrap/ButtonToolbar'
-import ButtonGroup from 'react-bootstrap/ButtonGroup'
 import Modal from 'react-bootstrap/Modal'
 
 import { boundsOverlap, pointInBounds, pointNearBounds } from './Utility'
@@ -23,6 +21,7 @@ import FunctionPlot from './components/FunctionPlot'
 import ImportDropTarget from './components/ImportDropTarget'
 import Header from './components/Header'
 import PhysicsSim, { MouseMode } from './components/PhysicsSim'
+import PhysicsToolbar from './components/PhysicsToolbar'
 
 import { ControlsContainer, ColumnFlexContainer, RowFlexContainer, FillParentFlexItem } from './Layout'
 
@@ -517,45 +516,25 @@ export default class App extends React.Component<{}, AppState> {
 				</Modal>
 		
 				<Header
-					onImportClickedCallback = { this.onImportClicked }
-					onExportClickedCallback = { this.onExportClicked }
+					onImportClickedCallback={ this.onImportClicked }
+					onExportClickedCallback={ this.onExportClicked }
 				/>
 
 				<RowFlexContainer>
 					<FillParentFlexItem>
 						<ControlsContainer>
-							<ButtonToolbar>
-								<ButtonGroup className="mr-2">
-									<Button size="sm" variant="secondary" title="Object mode" active={this.state.mouseMode === MouseMode.OBJECT} onClick={() => { this.setState({mouseMode: MouseMode.OBJECT })}}>
-										<FontAwesomeIcon icon="cube"></FontAwesomeIcon>
-									</Button>
-									<Button size="sm" variant="secondary" title="Boundary mode" active={this.state.mouseMode === MouseMode.BOUNDARY_EDIT} onClick={() => { this.setState({mouseMode: MouseMode.BOUNDARY_EDIT })}}>
-										<FontAwesomeIcon icon="vector-square"></FontAwesomeIcon>
-									</Button>
-									<Button size="sm" variant="secondary" title="Snooker mode" active={this.state.mouseMode === MouseMode.SNOOKER} onClick={() => { this.setState({mouseMode: MouseMode.SNOOKER })}}>
-										<FontAwesomeIcon icon="bowling-ball"></FontAwesomeIcon>
-									</Button>
-								</ButtonGroup>
-								<ButtonGroup className="mr-2">
-									<Button size="sm" variant="secondary" title="Reset view" onClick={this.onHomeClicked}><FontAwesomeIcon icon="home"></FontAwesomeIcon></Button>
-									<Button size="sm" variant="secondary" title="Show all objects" onClick={this.onShowAllObjectsClicked}><FontAwesomeIcon icon="eye"></FontAwesomeIcon></Button>
-								</ButtonGroup>
-								<ButtonGroup className="mr-2">
-									<Button size="sm" variant="secondary" title="Toggle snap to grid" active={this.state.snapToGrid} onClick={() => { this.setState({snapToGrid: !this.state.snapToGrid })}}>
-										<FontAwesomeIcon icon="magnet"></FontAwesomeIcon>
-									</Button>
-									<Button size="sm" variant="secondary" title="Decrease grid size" onClick={() => { this.setState({gridSize: Math.max(25, this.state.gridSize / 2)}) }}>
-										<FontAwesomeIcon icon="th"></FontAwesomeIcon>
-									</Button>
-									<Button size="sm" variant="secondary" title="Increase grid size" onClick={() => { this.setState({gridSize: this.state.gridSize * 2}) }}>
-										<FontAwesomeIcon icon="th-large"></FontAwesomeIcon>
-									</Button>
-								</ButtonGroup>
-								<ButtonGroup className="mr-2">
-									<Button size="sm" variant="secondary" title="Spawn random objects" onClick={this.onRandomClicked}><FontAwesomeIcon icon="dice"></FontAwesomeIcon></Button>
-									<Button size="sm" variant="warning" title="Remove all objects" onClick={this.onClearClicked}><FontAwesomeIcon icon="radiation"></FontAwesomeIcon></Button>
-								</ButtonGroup>
-							</ButtonToolbar>
+							<PhysicsToolbar
+								mouseMode={this.state.mouseMode}
+								snapToGrid={this.state.snapToGrid}
+								onMouseModeChanged={(mouseMode) => { this.setState({mouseMode}) }}
+								onHomeClicked={this.onHomeClicked}
+								onShowAllObjectsClicked={this.onShowAllObjectsClicked}
+								onRandomClicked={this.onRandomClicked}
+								onClearClicked={this.onClearClicked}
+								onSnapToGridChanged={(snapToGrid) => { this.setState({snapToGrid}) }}
+								onIncreaseGridSizeClicked={() => { this.setState({gridSize: this.state.gridSize * 2}) }}
+								onDecreaseGridSizeClicked={() => { this.setState({gridSize: Math.max(25, this.state.gridSize / 2)}) }}
+							/>
 						</ControlsContainer>
 						<PhysicsSim
 							ref={this.physicsSimRef}
