@@ -1,10 +1,13 @@
 ///<reference path="../types/types.d.ts" />
 
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+
 import React from 'react'
 
 import { useDrop } from 'react-dnd'
 import { NativeTypes } from 'react-dnd-html5-backend'
 import Button from 'react-bootstrap/Button'
+import { faFolderOpen } from '@fortawesome/free-solid-svg-icons'
 
 const outerStyle: React.CSSProperties = {
 	height: '12rem',
@@ -86,7 +89,7 @@ const ImportDropTarget: React.FC<ImportDropTargetProps> = (props) => {
 					<p>Drag and drop an exported .json file</p>
 					<p>or:</p>
 					<Button variant="success" onClick={ () => { fileUploader && fileUploader.click() } }>
-						Select from your computer
+						<FontAwesomeIcon icon={faFolderOpen} /> Select from your computer
 					</Button>
 
 					<input

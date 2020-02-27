@@ -8,18 +8,14 @@ import { get, set } from 'local-storage'
 import Matter from 'matter-js'
 import * as React from 'react'
 import * as ReactColor from 'react-color'
-import { DndProvider } from 'react-dnd'
-import Backend from 'react-dnd-html5-backend'
-
-import Button from 'react-bootstrap/Button'
-import Modal from 'react-bootstrap/Modal'
 
 import { boundsOverlap, pointInBounds, pointNearBounds } from './Utility'
 import { constants } from './components/Variables'
 import ControlPanel from './components/ControlPanel'
 import FunctionPlot from './components/FunctionPlot'
-import ImportDropTarget from './components/ImportDropTarget'
+
 import Header from './components/Header'
+import ImportModal from './components/ImportModal'
 import PhysicsSim, { MouseMode } from './components/PhysicsSim'
 import PhysicsToolbar from './components/PhysicsToolbar'
 
@@ -414,7 +410,7 @@ export default class App extends React.Component<{}, AppState> {
 		this.setState({ showImportModal: true })
 	}
 
-	onImportModalClosed = (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+	onImportModalClosed = () => {
 		this.setState({ showImportModal: false })
 	}
 
@@ -499,21 +495,12 @@ export default class App extends React.Component<{}, AppState> {
 	render = () => {
 		return (
 			<ColumnFlexContainer>
-				<Modal show={ this.state.showImportModal } onHide={ () => { this.setState({ showImportModal: false }) } }>
-					<Modal.Header closeButton>
-						<Modal.Title>Import data</Modal.Title>
-					</Modal.Header>
-					<Modal.Body>
-						<DndProvider backend={Backend}>
-							<ImportDropTarget onFilesSelected={ this.onFilesSelected } />
-						</DndProvider>
-					</Modal.Body>
-					<Modal.Footer>
-						<Button variant="primary" onClick={ this.onImportModalClosed }>
-							Import
-						</Button>
-					</Modal.Footer>
-				</Modal>
+				<ImportModal
+					show={ this.state.showImportModal }
+					onFilesSelected={ this.onFilesSelected }
+					onHide={ this.onImportModalClosed }
+					onClosed={ this.onImportModalClosed }
+				/>
 		
 				<Header
 					onImportClickedCallback={ this.onImportClicked }

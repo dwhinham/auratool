@@ -9,17 +9,48 @@ import './index.css';
 import App from './App'
 import * as serviceWorker from './serviceWorker';
 
-// Setup Font Awesome
+// Build Font Awesome library
 import { library } from '@fortawesome/fontawesome-svg-core'
 import {
-	faBorderAll, faBowlingBall, faChartLine, faCube, faDice,
-	faEye, faHome, faMagnet, faPlus, faPalette, faRadiation,
-	faTh, faThLarge, faTrash, faVectorSquare
+	faBorderAll,
+	faBowlingBall,
+	faChartLine,
+	faCube,
+	faDice,
+	faEye,
+	faFileExport,
+	faFileImport,
+	faFolderOpen,
+	faHome,
+	faMagnet,
+	faPalette,
+	faPlus,
+	faRadiation,
+	faTh,
+	faThLarge,
+	faTrash,
+	faVectorSquare
 } from '@fortawesome/free-solid-svg-icons'
+
 library.add(
-	faBorderAll, faBowlingBall, faChartLine, faCube, faDice,
-	faEye, faHome, faMagnet, faPlus, faPalette, faRadiation,
-	faTh, faThLarge, faTrash, faVectorSquare
+	faBorderAll,
+	faBowlingBall,
+	faChartLine,
+	faCube,
+	faDice,
+	faEye,
+	faFileExport,
+	faFileImport,
+	faFolderOpen,
+	faHome,
+	faMagnet,
+	faPalette,
+	faPlus,
+	faRadiation,
+	faTh,
+	faThLarge,
+	faTrash,
+	faVectorSquare
 )
 
 const MATHJAX_OPTIONS = {

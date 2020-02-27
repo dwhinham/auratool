@@ -100,4 +100,7 @@ type BoundaryDeletedCallback = (boundary: Boundary) => void
 
 type ImportClickedCallback = () => void
 type ExportClickedCallback = () => void
+
+type ModalClosedCallback = () => void
+type ModalHideCallback = () => void
 type FilesSelectedCallback = (fileList: FileList) => void
