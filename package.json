@@ -43,8 +43,8 @@
   "scripts": {
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build",
-    "start": "react-scripts start",
-    "build": "react-scripts build",
+    "start": "REACT_APP_GIT_VERSION=`git describe --tags --dirty` REACT_APP_GIT_SHA=`git rev-parse HEAD` react-scripts start",
+    "build": "REACT_APP_GIT_VERSION=`git describe --tags --dirty` REACT_APP_GIT_SHA=`git rev-parse HEAD` react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

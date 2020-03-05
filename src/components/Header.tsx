@@ -23,6 +23,9 @@ export const Header: React.FC<HeaderProps> = (props) => {
 					alt="auratool"
 				/>
 			</Navbar.Brand>
+			<Navbar.Text>
+				<a href={`https://github.com/dwhinham/auratool/commit/${process.env.REACT_APP_GIT_SHA}`}>{process.env.REACT_APP_GIT_VERSION}</a>
+			</Navbar.Text>
 			<Navbar.Toggle aria-controls="responsive-navbar-nav" />
 			<Navbar.Collapse id="responsive-navbar-nav">
 				<Nav className="ml-auto">
