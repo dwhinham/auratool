@@ -16,7 +16,8 @@ import Table from 'react-bootstrap/Table'
 import Tabs from 'react-bootstrap/Tabs'
 
 import { evaluateServerUtilFunction } from '../Utility'
-import { vars, Variables } from './Variables'
+import { VariablePanel } from './VariablePanel'
+import { localVars } from '../Variables'
 import { FillParentFlexItem } from '../Layout'
 
 export const ControlPanelContainer = styled(FillParentFlexItem)`
@@ -62,24 +63,11 @@ export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
 	)
 	const globalUtilValue = serverUtilValues.length ? serverUtilValues.reduce((a, b) => a + b).toFixed(2) : 0
 
-
-/*
-<MathJax.Context
-		input='ascii'
-		options={{
-			asciimath2jax: {
-				useMathMLspacing: true,
-				preview: "none",
-			}
-		}}
-	>
-*/
-
 	return (
 		<ControlPanelContainer>
 			<Tabs id="control-panel">
 				<Tab eventKey="variables" title="Variables">
-					<Variables boundaries={props.boundaries} utilConstants={props.utilConstants} utilGlobalVars={props.utilGlobalVars} onUtilConstantUpdated={props.onUtilConstantUpdated} />
+					<VariablePanel boundaries={props.boundaries} utilConstants={props.utilConstants} utilGlobalVars={props.utilGlobalVars} onUtilConstantUpdated={props.onUtilConstantUpdated} />
 				</Tab>
 
 				<Tab eventKey="functions" title="Functions">
@@ -111,7 +99,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
 										</Dropdown.Item>
 										<Dropdown.Divider />
 										{
-											Object.keys(vars).map((key, j) =>
+											Object.keys(localVars).map((key, j) =>
 												<Dropdown.Item key={j} onSelect={() => { props.onUtilVarUpdated(i, key) }}>
 													<MathJax.Node>{key}</MathJax.Node>
 												</Dropdown.Item>

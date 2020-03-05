@@ -9,18 +9,16 @@ import Matter from 'matter-js'
 import * as React from 'react'
 import * as ReactColor from 'react-color'
 
-import { boundsOverlap, pointInBounds, pointNearBounds } from './Utility'
-import { constants } from './components/Variables'
 import ControlPanel from './components/ControlPanel'
 import FunctionPlot from './components/FunctionPlot'
-
 import Header from './components/Header'
 import ImportModal from './components/ImportModal'
 import PhysicsSim, { MouseMode } from './components/PhysicsSim'
 import PhysicsToolbar from './components/PhysicsToolbar'
 
 import { ControlsContainer, ColumnFlexContainer, RowFlexContainer, FillParentFlexItem } from './Layout'
-import { createExportFilename } from './Utility'
+import { boundsOverlap, createExportFilename, pointInBounds, pointNearBounds } from './Utility'
+import { constants } from './Variables'
 
 const colors = [
 	'#e6194b',
