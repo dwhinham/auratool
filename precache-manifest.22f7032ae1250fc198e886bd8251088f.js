@@ -1,6 +1,6 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "7fdbb3bc39d60795e990a849ea48e566",
+    "revision": "4ad7212bf01b4671ef9f8a4483939ccf",
     "url": "/auratool/index.html"
   },
   {
@@ -8,7 +8,7 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/auratool/static/css/2.67123b20.chunk.css"
   },
   {
-    "revision": "d6c511a0213f56e63d51",
+    "revision": "5446d3e564a2793a16b1",
     "url": "/auratool/static/css/main.34463d2f.chunk.css"
   },
   {
@@ -20,8 +20,8 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/auratool/static/js/2.aae9f162.chunk.js.LICENSE.txt"
   },
   {
-    "revision": "d6c511a0213f56e63d51",
-    "url": "/auratool/static/js/main.0a1de35c.chunk.js"
+    "revision": "5446d3e564a2793a16b1",
+    "url": "/auratool/static/js/main.7f91c3e2.chunk.js"
   },
   {
     "revision": "e4e5b1a742bb04048fd4",
