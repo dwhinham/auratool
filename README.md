@@ -1,3 +1,5 @@
+[![Deploy](https://github.com/dwhinham/auratool/workflows/Deploy/badge.svg)](https://github.com/dwhinham/auratool/actions?query=workflow:Deploy)
+
 <p align="center">
     <img width='640' height='200' src='src/assets/logo.svg'>
 </p>
