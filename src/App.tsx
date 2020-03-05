@@ -20,6 +20,7 @@ import PhysicsSim, { MouseMode } from './components/PhysicsSim'
 import PhysicsToolbar from './components/PhysicsToolbar'
 
 import { ControlsContainer, ColumnFlexContainer, RowFlexContainer, FillParentFlexItem } from './Layout'
+import { createExportFilename } from './Utility'
 
 const colors = [
 	'#e6194b',
@@ -456,7 +457,7 @@ export default class App extends React.Component<{}, AppState> {
 		}
 
 		//set('utilSim', this.state)
-		saveAs(new Blob([JSON.stringify(saveObj)]), 'util-sim.json')
+		saveAs(new Blob([JSON.stringify(saveObj)]), createExportFilename())
 	}
 
 	onFilesSelected = (fileList: FileList) => {
