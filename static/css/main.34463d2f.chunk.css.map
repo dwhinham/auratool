@@ -1,0 +1,1 @@
+{"version":3,"sources":["index.css"],"names":[],"mappings":"AAAA,gBACC,YACD,CAEA,KACC,eACD","file":"main.34463d2f.chunk.css","sourcesContent":["html, body, #root {\n\theight: 100vh;\n}\n\nhtml {\n\toverflow: hidden;\n}"]}
