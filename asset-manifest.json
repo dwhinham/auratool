@@ -1,26 +1,26 @@
 {
   "files": {
     "main.css": "/auratool/static/css/main.34463d2f.chunk.css",
-    "main.js": "/auratool/static/js/main.6a384d96.chunk.js",
-    "main.js.map": "/auratool/static/js/main.6a384d96.chunk.js.map",
+    "main.js": "/auratool/static/js/main.eefd0814.chunk.js",
+    "main.js.map": "/auratool/static/js/main.eefd0814.chunk.js.map",
     "runtime-main.js": "/auratool/static/js/runtime-main.e630facb.js",
     "runtime-main.js.map": "/auratool/static/js/runtime-main.e630facb.js.map",
     "static/css/2.89f067aa.chunk.css": "/auratool/static/css/2.89f067aa.chunk.css",
-    "static/js/2.e3ce581a.chunk.js": "/auratool/static/js/2.e3ce581a.chunk.js",
-    "static/js/2.e3ce581a.chunk.js.map": "/auratool/static/js/2.e3ce581a.chunk.js.map",
+    "static/js/2.755fcc06.chunk.js": "/auratool/static/js/2.755fcc06.chunk.js",
+    "static/js/2.755fcc06.chunk.js.map": "/auratool/static/js/2.755fcc06.chunk.js.map",
     "index.html": "/auratool/index.html",
-    "precache-manifest.ac96c0030a71be36c49887ff2d083394.js": "/auratool/precache-manifest.ac96c0030a71be36c49887ff2d083394.js",
+    "precache-manifest.7cb742de21bbcac29d94f55781a2ed25.js": "/auratool/precache-manifest.7cb742de21bbcac29d94f55781a2ed25.js",
     "service-worker.js": "/auratool/service-worker.js",
     "static/css/2.89f067aa.chunk.css.map": "/auratool/static/css/2.89f067aa.chunk.css.map",
     "static/css/main.34463d2f.chunk.css.map": "/auratool/static/css/main.34463d2f.chunk.css.map",
-    "static/js/2.e3ce581a.chunk.js.LICENSE.txt": "/auratool/static/js/2.e3ce581a.chunk.js.LICENSE.txt",
+    "static/js/2.755fcc06.chunk.js.LICENSE.txt": "/auratool/static/js/2.755fcc06.chunk.js.LICENSE.txt",
     "static/media/logo.svg": "/auratool/static/media/logo.d8948e3c.svg"
   },
   "entrypoints": [
     "static/js/runtime-main.e630facb.js",
     "static/css/2.89f067aa.chunk.css",
-    "static/js/2.e3ce581a.chunk.js",
+    "static/js/2.755fcc06.chunk.js",
     "static/css/main.34463d2f.chunk.css",
-    "static/js/main.6a384d96.chunk.js"
+    "static/js/main.eefd0814.chunk.js"
   ]
 }
