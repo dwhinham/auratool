@@ -488,6 +488,9 @@ export default class App extends React.Component<{}, AppState> {
 					Matter.World.add(matterWorld, body)
 				})
 			}
+
+			// Close dialog
+			this.setState({ showImportModal: false })
 		}
 	}
 
