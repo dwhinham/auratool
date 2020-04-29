@@ -21,7 +21,7 @@
     "evaluatex": "2.1.2",
     "file-saver": "^2.0.2",
     "gh-pages": "^2.2.0",
-    "jquery": "3.4.1",
+    "jquery": "3.5.0",
     "local-storage": "^2.0.0",
     "lodash": "^4.17.15",
     "matter-js": "0.14.2",
