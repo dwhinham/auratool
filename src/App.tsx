@@ -4,7 +4,7 @@ import { cloneDeep } from 'lodash'
 
 import evaluatex from 'evaluatex/dist/evaluatex'
 import { saveAs } from 'file-saver'
-import { get, set } from 'local-storage'
+import { get } from 'local-storage'
 import Matter from 'matter-js'
 import * as React from 'react'
 import * as ReactColor from 'react-color'
