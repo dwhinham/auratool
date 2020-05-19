@@ -1589,15 +1589,6 @@
     regexpp "^3.0.0"
     tsutils "^3.17.1"
 
-"@typescript-eslint/experimental-utils@2.22.0":
-  version "2.22.0"
-  resolved "https://registry.yarnpkg.com/@typescript-eslint/experimental-utils/-/experimental-utils-2.22.0.tgz#4d00c91fbaaa68e56e7869be284999a265707f85"
-  integrity sha512-sJt1GYBe6yC0dWOQzXlp+tiuGglNhJC9eXZeC8GBVH98Zv9jtatccuhz0OF5kC/DwChqsNfghHx7OlIDQjNYAQ==
-  dependencies:
-    "@types/json-schema" "^7.0.3"
-    "@typescript-eslint/typescript-estree" "2.22.0"
-    eslint-scope "^5.0.0"
-
 "@typescript-eslint/experimental-utils@2.34.0":
   version "2.34.0"
   resolved "https://registry.yarnpkg.com/@typescript-eslint/experimental-utils/-/experimental-utils-2.34.0.tgz#d3524b644cdb40eebceca67f8cf3e4cc9c8f980f"
@@ -1617,19 +1608,6 @@
     "@typescript-eslint/experimental-utils" "2.34.0"
     "@typescript-eslint/typescript-estree" "2.34.0"
     eslint-visitor-keys "^1.1.0"
-
-"@typescript-eslint/typescript-estree@2.22.0":
-  version "2.22.0"
-  resolved "https://registry.yarnpkg.com/@typescript-eslint/typescript-estree/-/typescript-estree-2.22.0.tgz#a16ed45876abf743e1f5857e2f4a1c3199fd219e"
-  integrity sha512-2HFZW2FQc4MhIBB8WhDm9lVFaBDy6h9jGrJ4V2Uzxe/ON29HCHBTj3GkgcsgMWfsl2U5as+pTOr30Nibaw7qRQ==
-  dependencies:
-    debug "^4.1.1"
-    eslint-visitor-keys "^1.1.0"
-    glob "^7.1.6"
-    is-glob "^4.0.1"
-    lodash "^4.17.15"
-    semver "^6.3.0"
-    tsutils "^3.17.1"
 
 "@typescript-eslint/typescript-estree@2.34.0":
   version "2.34.0"
@@ -8790,10 +8768,10 @@ react-color@^2.18.0:
     reactcss "^1.2.0"
     tinycolor2 "^1.4.1"
 
-react-contenteditable@^3.3.3:
-  version "3.3.3"
-  resolved "https://registry.yarnpkg.com/react-contenteditable/-/react-contenteditable-3.3.3.tgz#73ea271a0e84d54516e6075c318d4372e5b95c70"
-  integrity sha512-3sOt9x6A7SzHqJgFRqKfaUnIh2tdxrdnJcE/0g1dN/g3twsqNxMxUCJGWvZUUDIQjUzqdSz6tsnGdddrPr5UNg==
+react-contenteditable@^3.3.4:
+  version "3.3.4"
+  resolved "https://registry.yarnpkg.com/react-contenteditable/-/react-contenteditable-3.3.4.tgz#32cb61b026341407afda3ba8a281b4a82bdb9232"
+  integrity sha512-pxn0YUJWOXSUhl4NZu8Za5ul+M5bCmSPH1p899AkWDE+cewROn+9uucwKE79YkZg8p7WpK5uo1nhEbYOsuoIUQ==
   dependencies:
     fast-deep-equal "^2.0.1"
     prop-types "^15.7.1"
