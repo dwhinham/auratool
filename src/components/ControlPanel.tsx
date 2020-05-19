@@ -83,7 +83,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
 							<FormControl
 								placeholder="Function (in ASCIImath)"
 								aria-label="Function (in ASCIImath)"
-								onChange={ (e: React.FormEvent<HTMLInputElement>) => e.currentTarget.value && props.onUtilFunctionUpdated(i, e.currentTarget.value) }
+								onChange={ (e: React.ChangeEvent<HTMLInputElement>) => e.currentTarget.value && props.onUtilFunctionUpdated(i, e.currentTarget.value) }
 								value={func.expression}
 							/>
 							<InputGroup.Append>
@@ -136,7 +136,7 @@ export const ControlPanel: React.FC<ControlPanelProps> = (props) => {
 						<FormControl
 							placeholder="Function (in ASCIImath)"
 							aria-label="Function (in ASCIImath)"
-							onChange={ (e: React.FormEvent<HTMLInputElement>) => e.currentTarget.value && props.onServerUtilFunctionUpdated(e.currentTarget.value) }
+							onChange={ (e: React.ChangeEvent<HTMLInputElement>) => e.currentTarget.value && props.onServerUtilFunctionUpdated(e.currentTarget.value) }
 							value={props.utilServer.expression}
 						/>
 					</InputGroup>
