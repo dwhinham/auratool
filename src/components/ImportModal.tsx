@@ -1,6 +1,6 @@
 ///<reference path="../types/types.d.ts" />
 
-import Backend from 'react-dnd-html5-backend'
+import { HTML5Backend } from 'react-dnd-html5-backend'
 import { DndProvider } from 'react-dnd'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faFileImport } from '@fortawesome/free-solid-svg-icons'
@@ -25,7 +25,7 @@ const ImportModal: React.FC<ImportModalProps> = (props) => {
 				<Modal.Title>Import data</Modal.Title>
 			</Modal.Header>
 			<Modal.Body>
-				<DndProvider backend={Backend}>
+				<DndProvider backend={HTML5Backend}>
 					<ImportDropTarget onFilesSelected={ (files) => { props.onFilesSelected && props.onFilesSelected(files) } } />
 				</DndProvider>
 			</Modal.Body>
