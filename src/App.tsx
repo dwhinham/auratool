@@ -136,12 +136,17 @@ export default class App extends React.Component<{}, AppState> {
 					expression: "min(max(0, -log(delta, 1000/60)), 1)",
 					utilVar: "delta",
 					color: colors[7]
+				},
+				{
+					expression: "e^(-(nu-1/sigma)^2/(2*0.05)^2)",
+					utilVar: "nu",
+					color: colors[8]
 				}
 			],
 			utilConstants: defaultConstantValues,
 			utilGlobalVars: {},
 			utilServer: {
-				expression: "U_alpha + U_beta + U_delta"
+				expression: "U_alpha + U_beta + U_delta + 2 * U_nu"
 			}
 		}
 	}
@@ -205,6 +210,7 @@ export default class App extends React.Component<{}, AppState> {
 			b.vars.delta = avgFrameTime
 			b.vars.alpha = numObjects ? numActive / numObjects : 0
 			b.vars.beta = numObjects ? numNearBoundary / numObjects : 0
+			b.vars.nu = numObjects ? numObjects / totalObjects : 0
 			b.vars.n = numObjects
 		})
 

@@ -65,7 +65,11 @@ export const localVars: Variables = {
 	},
 	beta: {
 		type: "proportion",
-		desc: "Number of objects near a boundary",
+		desc: "Proportion of objects near a boundary",
+	},
+	nu: {
+		type: "proportion",
+		desc: "Proportion of objects managed by this server",
 	},
 	n: {
 		type: "count",
