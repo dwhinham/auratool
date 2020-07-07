@@ -1,26 +1,26 @@
 {
   "files": {
     "main.css": "/auratool/static/css/main.34463d2f.chunk.css",
-    "main.js": "/auratool/static/js/main.eefd0814.chunk.js",
-    "main.js.map": "/auratool/static/js/main.eefd0814.chunk.js.map",
-    "runtime-main.js": "/auratool/static/js/runtime-main.e630facb.js",
-    "runtime-main.js.map": "/auratool/static/js/runtime-main.e630facb.js.map",
-    "static/css/2.89f067aa.chunk.css": "/auratool/static/css/2.89f067aa.chunk.css",
-    "static/js/2.755fcc06.chunk.js": "/auratool/static/js/2.755fcc06.chunk.js",
-    "static/js/2.755fcc06.chunk.js.map": "/auratool/static/js/2.755fcc06.chunk.js.map",
+    "main.js": "/auratool/static/js/main.c15b36f5.chunk.js",
+    "main.js.map": "/auratool/static/js/main.c15b36f5.chunk.js.map",
+    "runtime-main.js": "/auratool/static/js/runtime-main.9abd4e2e.js",
+    "runtime-main.js.map": "/auratool/static/js/runtime-main.9abd4e2e.js.map",
+    "static/css/2.829c9cb5.chunk.css": "/auratool/static/css/2.829c9cb5.chunk.css",
+    "static/js/2.79dda6f3.chunk.js": "/auratool/static/js/2.79dda6f3.chunk.js",
+    "static/js/2.79dda6f3.chunk.js.map": "/auratool/static/js/2.79dda6f3.chunk.js.map",
     "index.html": "/auratool/index.html",
-    "precache-manifest.7cb742de21bbcac29d94f55781a2ed25.js": "/auratool/precache-manifest.7cb742de21bbcac29d94f55781a2ed25.js",
+    "precache-manifest.d8f9a1fccc18d48027d0bf49c400f51c.js": "/auratool/precache-manifest.d8f9a1fccc18d48027d0bf49c400f51c.js",
     "service-worker.js": "/auratool/service-worker.js",
-    "static/css/2.89f067aa.chunk.css.map": "/auratool/static/css/2.89f067aa.chunk.css.map",
+    "static/css/2.829c9cb5.chunk.css.map": "/auratool/static/css/2.829c9cb5.chunk.css.map",
     "static/css/main.34463d2f.chunk.css.map": "/auratool/static/css/main.34463d2f.chunk.css.map",
-    "static/js/2.755fcc06.chunk.js.LICENSE.txt": "/auratool/static/js/2.755fcc06.chunk.js.LICENSE.txt",
+    "static/js/2.79dda6f3.chunk.js.LICENSE.txt": "/auratool/static/js/2.79dda6f3.chunk.js.LICENSE.txt",
     "static/media/logo.svg": "/auratool/static/media/logo.d8948e3c.svg"
   },
   "entrypoints": [
-    "static/js/runtime-main.e630facb.js",
-    "static/css/2.89f067aa.chunk.css",
-    "static/js/2.755fcc06.chunk.js",
+    "static/js/runtime-main.9abd4e2e.js",
+    "static/css/2.829c9cb5.chunk.css",
+    "static/js/2.79dda6f3.chunk.js",
     "static/css/main.34463d2f.chunk.css",
-    "static/js/main.eefd0814.chunk.js"
+    "static/js/main.c15b36f5.chunk.js"
   ]
 }
