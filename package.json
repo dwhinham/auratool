@@ -17,7 +17,7 @@
     "@types/react-dom": "^16.9.8",
     "@types/styled-components": "^5.1.1",
     "bootstrap": "^4.4.1",
-    "chart.js": "^2.9.3",
+    "chart.js": "^2.9.4",
     "evaluatex": "2.1.2",
     "file-saver": "^2.0.2",
     "gh-pages": "^3.1.0",
