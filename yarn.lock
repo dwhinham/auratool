@@ -1542,10 +1542,10 @@
   dependencies:
     "@babel/types" "^7.3.0"
 
-"@types/chart.js@^2.9.22":
-  version "2.9.22"
-  resolved "https://registry.yarnpkg.com/@types/chart.js/-/chart.js-2.9.22.tgz#e52fd922aced217867445c2913b68ce98b1c2b5f"
-  integrity sha512-CneMxwh2T5fyMpXE5fuprTTmFtlLyZUFq1A3laUrCgOblDzupgiohrFg3jjsTIrqRI5K4qLZdrLN4zT9/MY5Dw==
+"@types/chart.js@^2.9.33":
+  version "2.9.33"
+  resolved "https://registry.yarnpkg.com/@types/chart.js/-/chart.js-2.9.33.tgz#59c6de80b8134379156f4ba7b96c0928a721c1ab"
+  integrity sha512-vB6ZFx1cA91aiCoVpreLQwCQHS/Cj+9YtjBTwFlTjKXyY0douXV2KV4+fluxdI+grDZ6hTCQeg2HY/aQ9NeLHA==
   dependencies:
     moment "^2.10.2"
 
